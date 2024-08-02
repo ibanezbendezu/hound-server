@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id Int @id @default(autoincrement())
+  githubId Int @unique
+  name String @unique
+  githubToken String
+}
+
+model Cluster {
+  id Int @id @default(autoincrement())
+  sha String @unique
+  clusterDate DateTime @default(now())
+  comparisons Comparison[]
+  numberOfRepos Int
+}
+
+model Comparison {
+  id Int @id @default(autoincrement())
+  sha String @unique
+  similarity Float
+  comparisonDate DateTime @default(now())
+
+  clusters Cluster[]
+
+  repositories Repository[]
+
+  pairs Pair[]
+}
+
+model Repository {
+  id Int @id @default(autoincrement())
+  sha String @unique
+  owner String
+  name String
+  totalLines  Int
+
+  comparisons Comparison[]
+
+  files       File[]
+}
+
+model File {
+  id Int @id @default(autoincrement())
+  sha String @unique
+  filepath String
+  charCount Int
+  lineCount Int
+  type String?
+  language String?
+  
+  repository Repository @relation(fields: [repositoryId], references: [id])
+  repositoryId Int
+
+  pairs Pair[]
+}
+
+model Pair {
+  id              Int      @id @default(autoincrement())
+  similarity      Float
+
+  leftFilepath     String
+  leftFileSha      String
+  charCountLeft    Int
+  lineCountLeft    Int
+
+  rightFilepath    String
+  rightFileSha     String
+  charCountRight   Int
+  lineCountRight   Int
+  
+  files           File[]
+
+  fragments       Fragment[]
+
+  comparison      Comparison @relation(fields: [comparisonId], references: [id])
+  comparisonId    Int
+}
+
+model Fragment {
+  id        Int    @id @default(autoincrement())
+
+  leftstartRow       Int
+  leftendRow         Int
+  leftstartCol       Int
+  leftendCol         Int
+
+  rightstartRow      Int
+  rightendRow        Int
+  rightstartCol      Int
+  rightendCol        Int
+
+  pairId     Int
+  pair       Pair    @relation(fields: [pairId], references: [id])
+}
