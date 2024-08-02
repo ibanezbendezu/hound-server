@@ -10,10 +10,10 @@ async function bootstrap() {
     app.use(cookieParser());
 
     app.enableCors({
-        origin: "http://localhost:3000", // Specify allowed origin(s) here or use '*' to allow all origins
+        origin: "http://localhost:3000",
         allowedHeaders: ["Authorization", "Content-Type", "Accept"],
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-        credentials: true // This is important for requests with credentials like cookies or Authorization headers
+        credentials: true
     });
 
     const configService = app.get(ConfigService);

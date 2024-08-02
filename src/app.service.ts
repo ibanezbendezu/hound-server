@@ -1,15 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { Dolos } from "./dolos";
-import { RepositoriesService } from "src/repositories/repositories.service";
-import { ComparisonsService } from "./comparisons/comparisons.service";
 import { ClustersService } from "./clusters/clusters.service";
 
 @Injectable()
 export class AppService {
 
     constructor(
-        private repository: RepositoriesService,
-        private comparison: ComparisonsService,
         private cluster: ClustersService
     ) {
     }
