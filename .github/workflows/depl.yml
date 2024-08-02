@@ -1,33 +1,42 @@
-name: Build and Publish Docker Image
+name: Deploy to DockerHub
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-    build-and-push:
-        runs-on: ubuntu-latest
-    
-        steps:
-            - uses: actions/checkout@v3
-        
-            - name: Login to DockerHub
-              uses: docker/login-action@v1
-              with:
-                username: ${{ secrets.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
-            - name: Create .env file
-              run: echo "${{ secrets.ENV }}" | base64 -d > .env
-            
-            - name: Build and tag Docker image
-              run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/hound-server:latest .
-            
-            - name: Push Docker image
-              run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/hound-server:latest
+  build:
+    runs-on: ubuntu-latest
 
-            - name: Update image metadata
-              uses: docker/metadata-action@v3
-              with:
-                images: ${{ secrets.DOCKERHUB_USERNAME }}/hound-server:latest
-                tags: |
-                    ${{ github.sha }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and tag Docker image
+      run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/hound-server:latest .
+
+    - name: Push Docker image
+      run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/hound-server:latest
+
+    - name: Update image metadata
+      uses: docker/metadata-action@v3
+      with:
+        images: ${{ secrets.DOCKERHUB_USERNAME }}/hound-server:latest
+        tags: |
+
+    - name: Set environment variables
+      run: |
+        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
+        echo "JWT_EXPIRATION_TIME_SECONDS=3600" >> $GITHUB_ENV
+        echo "GH_OAUTH_CLIENT_ID=${{ secrets.GH_OAUTH_CLIENT_ID }}" >> $GITHUB_ENV
+        echo "GH_OAUTH_CLIENT_SECRET=${{ secrets.GH_OAUTH_CLIENT_SECRET }}" >> $GITHUB_ENV
+        echo "GH_OAUTH_CALLBACK_URL=http://localhost:5000/auth/github/callback" >> $GITHUB_ENV
+        echo "GH_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+        echo "CLIENT_URL=http://localhost:3000" >> $GITHUB_ENV

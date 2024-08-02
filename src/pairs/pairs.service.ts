@@ -24,7 +24,7 @@ export class PairsService {
      */
     // ARREGLAR EL TIPO DE DATO QUE DEVUELVE ESTA FUNCIÓN
     async getPairById(pairId: number) {
-        this.octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+        this.octokit = new Octokit({ auth: process.env.GH_TOKEN });
 
         const pairFound = await this.prisma.pair.findUnique({
             where: {

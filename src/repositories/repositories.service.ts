@@ -36,7 +36,7 @@ export class RepositoriesService {
      */
     async getRepositoryContent(owner: string, name: string, username: string) {
         const user_token = await this.user.getUserToken(username);
-        const token = user_token || process.env.GITHUB_TOKEN;
+        const token = user_token || process.env.GH_TOKEN;
 
         this.octokit = new Octokit({ auth: token });
 
@@ -86,7 +86,7 @@ export class RepositoriesService {
      */
     async getFilteredRepositoryContent(owner: string, name: string, username: string, page: number = 1, perPage: number = 100): Promise<any> {
         const user_token = await this.user.getUserToken(username);
-        const token = user_token || process.env.GITHUB_TOKEN;
+        const token = user_token || process.env.GH_TOKEN;
     
         this.octokit = new Octokit({ auth: token });
     

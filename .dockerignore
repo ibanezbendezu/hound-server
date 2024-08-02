@@ -4,6 +4,5 @@ test
 .dockerignore
 Dockerfile
 README.md
-.env
 .idea
 .vscode

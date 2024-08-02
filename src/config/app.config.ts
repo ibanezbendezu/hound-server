@@ -9,13 +9,13 @@ export default (): AppConfig => ({
             expiresInSeconds: parseInt(process.env.JWT_EXPIRATION_TIME_SECONDS) || 3600
         },
         github: {
-            clientId: process.env.GITHUB_OAUTH_CLIENT_ID,
-            clientSecret: process.env.GITHUB_OAUTH_CLIENT_SECRET,
-            callbackURL: process.env.GITHUB_OAUTH_CALLBACK_URL
+            clientId: process.env.GH_OAUTH_CLIENT_ID,
+            clientSecret: process.env.GH_OAUTH_CLIENT_SECRET,
+            callbackURL: process.env.GH_OAUTH_CALLBACK_URL
         }
     },
 
     github: {
-        token: process.env.GITHUB_TOKEN
+        token: process.env.GH_TOKEN
     }
 });
