@@ -30,6 +30,8 @@ jobs:
       with:
         images: ${{ secrets.DOCKERHUB_USERNAME }}/hound-server:latest
         tags: |
+          latest
+          ${{ github.sha }}
 
     - name: Set environment variables
       run: |
