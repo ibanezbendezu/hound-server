@@ -78,7 +78,7 @@ export class ClustersController {
 
     @Post()
     async createCluster(@Body() body: { repos: any[], username: string }) {
-        const clusterCreated = await this.clustersService.createCluster(body.repos, body.username);
+        const clusterCreated = await this.clustersService.makeCluster(body.repos, body.username);
         if (!clusterCreated) throw new NotFoundException("Cluster not created");
         return clusterCreated;
     }

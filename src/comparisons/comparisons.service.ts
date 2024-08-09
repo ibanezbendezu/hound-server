@@ -405,12 +405,12 @@ export class ComparisonsService {
                 });
             }));
 
-            await this.prisma.comparison.update({
+            /* await this.prisma.comparison.update({
                 where: { id: comparison.id },
                 data: {
                     similarity: results.reduce((acc, result) => acc + result.similarityReport.allPairs()[0].similarity, 0) / results.length
                 }
-            });
+            }); */
 
             return comparison;
 
@@ -442,5 +442,182 @@ export class ComparisonsService {
         return results
             .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled' && result.value !== null)
             .map(result => result.value);
+    }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    async compareFiles(leftRepoFiles, rightRepoFiles, dolos) {
+        const promises = leftRepoFiles.flatMap((file1) =>
+            rightRepoFiles.map(async (file2) => {
+                try {
+                    const similarityReport = await dolos.analyze([file1.file, file2.file]);
+                    return {
+                        similarityReport,
+                        leftFileType: file1.type,
+                        lefFileSha: file1.sha,
+                        rightFileType: file2.type,
+                        rightFileSha: file2.sha
+                    };
+                } catch (error) {
+                    console.error(`Error analyzing files: ${file1.file} and ${file2.file}`, error);
+                    return null;
+                }
+            })
+        );
+    
+        const results = await Promise.allSettled(promises);
+        return results
+            .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled' && result.value !== null)
+            .map(result => result.value);
+    }
+
+
+    async doComparison(leftRepository: any, rightRepository: any, clusterId?: number) {
+        try {
+            const dolos = new Dolos();
+    
+            const [leftRepoFiles, rightRepoFiles] = await Promise.all([
+                dolos.stringsToFiles(leftRepository.content),
+                dolos.stringsToFiles(rightRepository.content)
+            ]);
+
+            const sortStrings = [leftRepository.sha, rightRepository.sha].sort((a, b) => a.localeCompare(b));
+            const sha = sortStrings.join("");
+            const comparisonSha = createHash("sha256").update(sha).digest("hex");
+            const comparisonFound = await this.prisma.comparison.findUnique({ where: { sha: comparisonSha } });
+            if (comparisonFound) {
+                return comparisonFound;
+            }
+
+            const repositoryA = await this.prisma.repository.upsert({
+                where: { sha: leftRepository.sha },
+                update: {},
+                create: {
+                    sha: leftRepository.sha,
+                    owner: leftRepository.owner,
+                    name: leftRepository.name,
+                    totalLines: 0
+                }
+            });
+
+            const repositoryB = await this.prisma.repository.upsert({
+                where: { sha: rightRepository.sha },
+                update: {},
+                create: {
+                    sha: rightRepository.sha,
+                    owner: rightRepository.owner,
+                    name: rightRepository.name,
+                    totalLines: 0
+                }
+            });
+    
+            const comparison = await this.prisma.comparison.create({
+                data: {
+                    sha: comparisonSha,
+                    similarity: 0.0,
+                    comparisonDate: new Date(),
+                    repositories: { connect: [{ id: repositoryA.id }, { id: repositoryB.id }] },
+                }
+            });
+    
+            await this.prisma.$transaction([
+                this.prisma.repository.update({
+                    where: { id: repositoryA.id },
+                    data: { comparisons: { connect: { id: comparison.id } } }
+                }),
+                this.prisma.repository.update({
+                    where: { id: repositoryB.id },
+                    data: { comparisons: { connect: { id: comparison.id } } }
+                })
+            ]);
+            
+            console.log("Comparing repositories: ", leftRepository.name, rightRepository.name);
+
+            /* const promises = leftRepoFiles.flatMap((file1) =>
+                rightRepoFiles.map((file2) => dolos.analyze([file1.file, file2.file])
+                    .then(similarityReport => ({
+                        similarityReport,
+                        leftFileType: file1.type,
+                        lefFileSha: file1.sha,
+                        rightFileType: file2.type,
+                        rightFileSha: file2.sha
+                    }
+                )))
+            );
+    
+            const results = await Promise.all(promises); */
+
+            const results = await this.compareFiles(leftRepoFiles, rightRepoFiles, dolos);
+
+            await this.prisma.$transaction(results.map((result) => {
+                return this.prisma.pair.create({
+                    data: {
+                        similarity: result.similarityReport.allPairs()[0].similarity,
+                        leftFileSha: result.lefFileSha,
+                        leftFilepath: result.similarityReport.allPairs()[0].leftFile.path,
+                        charCountLeft: result.similarityReport.allPairs()[0].leftFile.charCount,
+                        lineCountLeft: result.similarityReport.allPairs()[0].leftFile.lineCount,
+                        rightFileSha: result.rightFileSha,
+                        rightFilepath: result.similarityReport.allPairs()[0].rightFile.path,
+                        charCountRight: result.similarityReport.allPairs()[0].rightFile.charCount,
+                        lineCountRight: result.similarityReport.allPairs()[0].rightFile.lineCount,
+                        comparison: { connect: { id: comparison.id } },
+                        files: {
+                            connectOrCreate: [
+                                {
+                                where: { sha: result.lefFileSha },
+                                create: {
+                                    sha: result.lefFileSha,
+                                    filepath: result.similarityReport.allPairs()[0].leftFile.path,
+                                    charCount: result.similarityReport.allPairs()[0].leftFile.charCount,
+                                    lineCount: result.similarityReport.allPairs()[0].leftFile.lineCount,
+                                    language: this.getFileLanguage(result.similarityReport.allPairs()[0].leftFile.path),
+                                    type: this.identifyFileType(result.similarityReport.allPairs()[0].leftFile.content),
+                                    repository: { connect: { id: Number(repositoryA.id) } }
+                                }
+                                },
+                                {
+                                where: { sha: result.rightFileSha },
+                                create: {
+                                    sha: result.rightFileSha,
+                                    filepath: result.similarityReport.allPairs()[0].rightFile.path,
+                                    charCount: result.similarityReport.allPairs()[0].rightFile.charCount,
+                                    lineCount: result.similarityReport.allPairs()[0].rightFile.lineCount,
+                                    language: this.getFileLanguage(result.similarityReport.allPairs()[0].rightFile.path),
+                                    type: this.identifyFileType(result.similarityReport.allPairs()[0].rightFile.content),
+                                    repository: { connect: { id: Number(repositoryB.id) } }
+                                }
+                                }
+                            ]
+                        },
+                        fragments: {
+                            create: result.similarityReport.allPairs()[0].buildFragments().map(fragment => ({
+                                leftstartRow: fragment.leftSelection.startRow,
+                                leftendRow: fragment.leftSelection.endRow,
+                                leftstartCol: fragment.leftSelection.startCol,
+                                leftendCol: fragment.leftSelection.endCol,
+                                rightstartRow: fragment.rightSelection.startRow,
+                                rightendRow: fragment.rightSelection.endRow,
+                                rightstartCol: fragment.rightSelection.startCol,
+                                rightendCol: fragment.rightSelection.endCol,
+                            }))
+                        },
+                    }
+                });
+            }));
+
+            /* await this.prisma.comparison.update({
+                where: { id: comparison.id },
+                data: {
+                    similarity: results.reduce((acc, result) => acc + result.similarityReport.allPairs()[0].similarity, 0) / results.length
+                }
+            }); */
+
+            return comparison;
+
+            } catch (error) {
+            console.log(error);
+        }
     }
 }

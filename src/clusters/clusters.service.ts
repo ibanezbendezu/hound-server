@@ -5,6 +5,7 @@ import { RepositoriesService } from "src/repositories/repositories.service";
 import { ComparisonsService } from "src/comparisons/comparisons.service";
 import { createHash } from 'crypto';
 import { compoundHash } from "src/shared";
+import { GithubService } from "src/github/github.service";
 
 /**
  * Servicio que maneja todas las operaciones relacionadas con los clusters.
@@ -15,6 +16,7 @@ export class ClustersService {
     constructor(
         private repository: RepositoriesService,
         private comparisons: ComparisonsService,
+        private github: GithubService,
         private prisma: PrismaService) {
     }
 
@@ -297,7 +299,7 @@ export class ClustersService {
         console.log(username);
 
         const repositories = await Promise.all(repos.map(async (repo) => {
-            return await this.repository.getRepositoryContent(repo.owner, repo.name, username);
+            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
 
         const concatenatedShas = repositories.map(repo => repo.sha).join('');
@@ -626,6 +628,62 @@ export class ClustersService {
      */
     // ARREGLAR EL TIPO QUE DEVUELVE
     async makeCluster(repos: any[], username: string) {
+        console.log(repos);
+        console.log(username);
+
+        const repositoryContents = await Promise.all(repos.map(async (repo) => {
+            return await this.repository.getFilteredRepositoryContent(repo.owner, repo.name, username);
+        }));
+
+        console.log("Contenido de los repositorios obtenido");
+
+        const clusterSha = compoundHash(repositoryContents, true);
+        let cluster = await this.prisma.cluster.create({
+            data: {
+                sha: clusterSha,
+                clusterDate: new Date(),
+                numberOfRepos: repos.length
+            }
+        });
+
+        for (let i = 0; i < repositoryContents.length; i++) {
+            for (let j = i + 1; j < repositoryContents.length; j++) {
+                console.log(`\nComparando ${repositoryContents[i].name} con ${repositoryContents[j].name}`);
+                let comparison = await this.comparisons.makeComparison(repositoryContents[i], repositoryContents[j]);
+                console.log(`Comparación realizada: ${comparison.id}`);
+                cluster = await this.prisma.cluster.update({
+                    where: { id: cluster.id },
+                    data: {
+                        comparisons: { connect: { id: comparison.id } }
+                    }
+                });
+
+                comparison = await this.prisma.comparison.update({
+                    where: { id: comparison.id },
+                    data: {
+                        clusters: { connect: { id: cluster.id } }
+                    }
+                });
+            }
+        }
+
+        const newCluster = await this.prisma.cluster.findUnique({
+            where: { id: cluster.id },
+            include: {
+                comparisons: {
+                    include: {
+                        repositories: true,
+                    }
+                }
+            }
+        });
+
+        return { ...newCluster, repositories: repos };
+
+        return cluster;
+    }
+
+    async doCluster(repos: any[], username: string) {
         console.log(repos);
         console.log(username);
 
