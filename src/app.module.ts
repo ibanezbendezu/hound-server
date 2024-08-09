@@ -1,3 +1,4 @@
+import { GithubModule } from './github/github.module';
 import { PairsModule } from './pairs/pairs.module';
 import { FilesModule } from './files/files.module';
 import { ClustersModule } from "./clusters/clusters.module";
@@ -13,8 +14,9 @@ import { ComparisonsModule } from "./comparisons/comparisons.module";
 
 @Module({
     imports: [
-        PairsModule, 
-        FilesModule, 
+        GithubModule,
+        PairsModule,
+        FilesModule,
         ClustersModule, ConfigModule.forRoot({ isGlobal: true, load: [appConfig] }),
         GithubOauthModule, RepositoriesModule, ComparisonsModule],
     controllers: [AppController],

@@ -1,73 +1,49 @@
-import { Injectable } from "@nestjs/common";
-import { Octokit } from "@octokit/rest";
-import { UsersService } from "src/users/users.service";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Octokit } from '@octokit/rest';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { UsersService } from 'src/users/users.service';
 import { LRUCache } from "lru-cache";
+import { identifyFileType } from '../shared/utils/util';
+import { languagePicker } from '../shared/utils/util';
 
-interface FileContent {
-    path: string;
-    sha: string;
-    content: string;
-}
-
-/**
- * Servicio que maneja todas las solicitudes relacionadas con los repositorios.
- */
 @Injectable()
-export class RepositoriesService {
-    // Octokit es una biblioteca de cliente GitHub para JavaScript.
+export class GithubService {
     private octokit: Octokit;
-    // LRUCache es una biblioteca de almacenamiento en caché de JavaScript.
     private cache: LRUCache<string, string>;
 
     constructor(
+        private prisma: PrismaService,
         private user: UsersService) {
         this.cache = new LRUCache<string, string>({
             max: 1000,
-            ttl: 1000 * 60 * 60 // 1 hora
+            ttl: 1000 * 60 * 60
         });
     }
 
-    /**
-     * Obtiene el contenido de un repositorio por su propietario y nombre.
-     * @param owner Propietario del repositorio.
-     * @param name Nombre del repositorio.
-     * @param username Nombre de usuario del propietario del repositorio.
-     * @returns Contenido del repositorio.
-     */
-    async getRepositoryContent(owner: string, name: string, username: string) {
+    async getOwnerData(owner: string, username: string ) {
         const user_token = await this.user.getUserToken(username);
         const token = user_token || process.env.GH_TOKEN;
-
         this.octokit = new Octokit({ auth: token });
 
         try {
-            const sha = await this.octokit.repos.getBranch({
-                owner,
-                repo: name,
-                branch: "master"
+            const userRes = await this.octokit.users.getByUsername({ username: owner });
+            const ownerProfile = userRes.data;
+
+            const reposRes = await this.octokit.repos.listForUser({ username: owner });
+            const repos = reposRes.data;
+            const javaRepos = repos.filter(repo => repo.language === "Java");
+
+            const springBootProjects = [];
+            const identifyPromises = javaRepos.map(async (repo) => {
+                const isSpringBoot = await this.identifySpringBootProject(owner, repo.name);
+                if (isSpringBoot) {
+                    springBootProjects.push(repo);
+                }
             });
 
-            const { data } = await this.octokit.git.getTree({
-                owner,
-                repo: name,
-                tree_sha: sha.data.commit.sha,
-                recursive: "1"
-            });
+            await Promise.all(identifyPromises);
 
-            const files = data.tree.filter(item => item.type === "blob" && item.path.startsWith("src/main/java/"));
-
-            const fileContents = await Promise.all(files.map(async (file) => {
-                const content = await this.getFileContent(owner, name, file.sha);
-                return { path: file.path, sha: file.sha, content };
-            }));
-
-            return {
-                sha: data.sha,
-                name,
-                owner,
-                content: fileContents
-            };
-
+            return { ownerProfile, repos: springBootProjects };
         } catch (error) {
             console.error(error);
             throw error;
@@ -185,5 +161,61 @@ export class RepositoriesService {
         }
 
         return "Unknown";
+    }
+
+    async identifySpringBootProject(
+        owner: string,
+        name: string,
+        page: number = 1,
+        perPage: number = 100
+    ): Promise<boolean> {
+        try {
+            const sha = await this.octokit.repos.getBranch({
+                owner,
+                repo: name,
+                branch: "master"
+            });
+    
+            const { data } = await this.octokit.git.getTree({
+                owner,
+                repo: name,
+                tree_sha: sha.data.commit.sha,
+                recursive: "1",
+                page,
+                per_page: perPage
+            });
+    
+            const files = data.tree;
+    
+            const pomFile = files.find((file: any) => file.path.endsWith('pom.xml'));
+            const gradleFile = files.find((file: any) => file.path.endsWith('build.gradle'));
+    
+            const promises = [];
+    
+            if (pomFile) {
+                promises.push(this.getFileContent(owner, name, pomFile.sha).then(pomContent => {
+                    if (pomContent && pomContent.includes('<groupId>org.springframework.boot</groupId>')) {
+                        return true;
+                    }
+                    return false;
+                }));
+            }
+    
+            if (gradleFile) {
+                promises.push(this.getFileContent(owner, name, gradleFile.sha).then(gradleContent => {
+                    if (gradleContent && gradleContent.includes('.springframework.boot')) {
+                        return true;
+                    }
+                    return false;
+                }));
+            }
+    
+            const results = await Promise.all(promises);
+            return results.includes(true);
+    
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
     }
 }

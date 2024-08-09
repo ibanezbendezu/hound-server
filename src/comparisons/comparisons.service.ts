@@ -332,7 +332,7 @@ export class ComparisonsService {
             
             console.log("Comparing repositories: ", leftRepository.name, rightRepository.name);
 
-            const promises = leftRepoFiles.flatMap((file1) =>
+            /* const promises = leftRepoFiles.flatMap((file1) =>
                 rightRepoFiles.map((file2) => dolos.analyze([file1.file, file2.file])
                     .then(similarityReport => ({
                         similarityReport,
@@ -344,7 +344,9 @@ export class ComparisonsService {
                 )))
             );
     
-            const results = await Promise.all(promises);
+            const results = await Promise.all(promises); */
+
+            const results = await this.analyzeFiles(leftRepoFiles, rightRepoFiles, dolos);
 
             await this.prisma.$transaction(results.map((result) => {
                 return this.prisma.pair.create({
@@ -415,5 +417,30 @@ export class ComparisonsService {
             } catch (error) {
             console.log(error);
         }
+    }
+
+    async analyzeFiles(leftRepoFiles, rightRepoFiles, dolos) {
+        const promises = leftRepoFiles.flatMap((file1) =>
+            rightRepoFiles.map(async (file2) => {
+                try {
+                    const similarityReport = await dolos.analyze([file1.file, file2.file]);
+                    return {
+                        similarityReport,
+                        leftFileType: file1.type,
+                        lefFileSha: file1.sha,
+                        rightFileType: file2.type,
+                        rightFileSha: file2.sha
+                    };
+                } catch (error) {
+                    console.error(`Error analyzing files: ${file1.file} and ${file2.file}`, error);
+                    return null;
+                }
+            })
+        );
+    
+        const results = await Promise.allSettled(promises);
+        return results
+            .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled' && result.value !== null)
+            .map(result => result.value);
     }
 }
