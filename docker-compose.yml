@@ -25,10 +25,10 @@ services:
       # Define environment variables directly here
       DATABASE_URL: postgres://postgres:pass@database:5432/db
       CLIENT_URL: http://localhost:3000
-      JWT_SECRET:
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 3600
-      GH_OAUTH_CLIENT_ID:
-      GH_OAUTH_CLIENT_SECRET:
+      GH_OAUTH_CLIENT_ID: ${GH_OAUTH_CLIENT_ID}
+      GH_OAUTH_CLIENT_SECRET: ${GH_OAUTH_CLIENT_SECRET}
       GH_OAUTH_CALLBACK_URL: http://localhost:5000/auth/github/callback
-      GH_TOKEN:
+      GH_TOKEN: ${GH_TOKEN}
       PORT: 5000
