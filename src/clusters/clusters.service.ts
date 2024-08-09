@@ -356,7 +356,7 @@ export class ClustersService {
 
     async updateCluster(id: number, repos: any[], username: string) {
         const repositories = await Promise.all(repos.map(async (repo) => {
-            return await this.repository.getRepositoryContent(repo.owner, repo.name, username);
+            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
 
         let cluster = await this.prisma.cluster.update({
@@ -418,7 +418,7 @@ export class ClustersService {
     // ARREGLAR EL TIPO QUE DEVUELVE
     async updateClusterBySha(sha: string, repos: any[], username: string) {
         const repositories = await Promise.all(repos.map(async (repo) => {
-            return await this.repository.getRepositoryContent(repo.owner, repo.name, username);
+            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
 
         let cluster = await this.prisma.cluster.update({
@@ -632,7 +632,7 @@ export class ClustersService {
         console.log(username);
 
         const repositoryContents = await Promise.all(repos.map(async (repo) => {
-            return await this.repository.getFilteredRepositoryContent(repo.owner, repo.name, username);
+            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
 
         console.log("Contenido de los repositorios obtenido");
@@ -688,7 +688,7 @@ export class ClustersService {
         console.log(username);
 
         const repositoryContents = await Promise.all(repos.map(async (repo) => {
-            return await this.repository.getFilteredRepositoryContent(repo.owner, repo.name, username);
+            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
 
         console.log("Contenido de los repositorios obtenido");

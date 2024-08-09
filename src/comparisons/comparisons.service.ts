@@ -271,7 +271,7 @@ export class ComparisonsService {
         "vh": "verilog"
     };
 
-    async makeComparison(leftRepository: any, rightRepository: any, clusterId?: number) {
+    async makeComparison(leftRepository: any, rightRepository: any) {
         try {
             const dolos = new Dolos();
     

@@ -35,4 +35,22 @@ export class GithubController {
             throw new NotFoundException("User not found");
         }
     }
+
+    @Get("file/:sha/content")
+    async getFileContentBySha(
+        @Param("sha") sha: string,
+        @Headers('authorization') authorizationHeader: string
+    ){
+        try {
+            const token = authorizationHeader.split(' ')[1];
+            const decoded = this.jwt.verifyToken(token);
+            const username = decoded.username;
+
+            const fileFound = await this.githubService.getFileContentBySha(sha, username);
+            if (!fileFound) throw new NotFoundException("File not found");
+            return fileFound;
+        } catch (error) {
+            throw new NotFoundException("Token inválido o expirado");
+        }
+    }
 }

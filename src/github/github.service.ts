@@ -8,7 +8,9 @@ import { languagePicker } from '../shared/utils/util';
 
 @Injectable()
 export class GithubService {
+    // Octokit es una biblioteca de cliente GitHub para Node.js
     private octokit: Octokit;
+    // LRUCache es una biblioteca de almacenamiento en caché de Node.js
     private cache: LRUCache<string, string>;
 
     constructor(
@@ -19,7 +21,13 @@ export class GithubService {
             ttl: 1000 * 60 * 60
         });
     }
-
+    
+    /**
+     * Obtiene el perfil de un usuario de GitHub y sus repositorios.
+     * @param owner Nombre del usuario.
+     * @param username Nombre de usuario del propietario del repositorio.
+     * @returns Perfil del usuario y sus repositorios.
+     */
     async getOwnerData(owner: string, username: string ) {
         const user_token = await this.user.getUserToken(username);
         const token = user_token || process.env.GH_TOKEN;
@@ -116,6 +124,35 @@ export class GithubService {
     }
 
     /**
+     * Obtiene el contenido de un archivo por su SHA.
+     * @param sha SHA del archivo.
+     * @param username Nombre de usuario del propietario del archivo.
+     * @returns Contenido del archivo.
+     */
+    async getFileContentBySha(sha: string, username: string) {
+        try {
+            const user_token = await this.user.getUserToken(username);
+            const token = user_token || process.env.GH_TOKEN;
+            this.octokit = new Octokit({ auth: token });
+
+            const file = await this.prisma.file.findUnique({
+                where: { sha },
+                include: { repository: {
+                    select: { owner: true, name: true }
+                }}
+            });
+
+            if (!file) return null;
+
+            const content = await this.getFileContent(file.repository.owner, file.repository.name, file.sha);
+            return content;
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    }
+
+    /**
      * Obtiene el contenido de un archivo.
      * @param owner Propietario del repositorio.
      * @param repo Nombre del repositorio.
@@ -140,30 +177,14 @@ export class GithubService {
     }
 
     /**
-     * Identifica el tipo de archivo.
-     * @param fileContent Contenido del archivo.
-     * @returns Tipo de archivo.
+     * Identifica si un proyecto es de Spring Boot.
+     * @param owner Propietario del repositorio.
+     * @param name Nombre del repositorio.
+     * @param page Número de página.
+     * @param perPage Cantidad de elementos por página.
+     * @returns Verdadero si el proyecto es de Spring Boot, falso en caso contrario
      */
-    identifyFileType(fileContent: string): string {
-        const controllerPattern = /@Controller|\@GetMapping|\@PostMapping|\@DeleteMapping|\@PutMapping/;
-        const servicePattern = /@Service|\@Injectable/;
-        const repositoryPattern = /@Repository|findById\(|save\(/;
-        const entityPattern = /@Entity/;
-
-        if (controllerPattern.test(fileContent)) {
-            return "Controller";
-        } else if (servicePattern.test(fileContent)) {
-            return "Service";
-        } else if (repositoryPattern.test(fileContent)) {
-            return "Repository";
-        } else if (entityPattern.test(fileContent)) {
-            return "Entity";
-        }
-
-        return "Unknown";
-    }
-
-    async identifySpringBootProject(
+    private async identifySpringBootProject(
         owner: string,
         name: string,
         page: number = 1,
@@ -217,5 +238,29 @@ export class GithubService {
             console.error(error);
             throw error;
         }
+    }
+
+    /**
+     * Identifica el tipo de archivo.
+     * @param fileContent Contenido del archivo.
+     * @returns Tipo de archivo.
+     */
+    identifyFileType(fileContent: string): string {
+        const controllerPattern = /@Controller|\@GetMapping|\@PostMapping|\@DeleteMapping|\@PutMapping/;
+        const servicePattern = /@Service|\@Injectable/;
+        const repositoryPattern = /@Repository|findById\(|save\(/;
+        const entityPattern = /@Entity/;
+
+        if (controllerPattern.test(fileContent)) {
+            return "Controller";
+        } else if (servicePattern.test(fileContent)) {
+            return "Service";
+        } else if (repositoryPattern.test(fileContent)) {
+            return "Repository";
+        } else if (entityPattern.test(fileContent)) {
+            return "Entity";
+        }
+
+        return "Unknown";
     }
 }

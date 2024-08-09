@@ -1,16 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FilesService } from 'src/files/files.service';
-import { Octokit } from '@octokit/rest';
 
 /**
  * Servicio que maneja todas las solicitudes relacionadas con los pares.
  */
 @Injectable()
 export class PairsService {
-    // Octokit es una biblioteca de cliente GitHub para JavaScript.
-    private octokit: Octokit;
-
     constructor(
         private prisma: PrismaService,
         private readonly filesService: FilesService,
@@ -24,8 +20,6 @@ export class PairsService {
      */
     // ARREGLAR EL TIPO DE DATO QUE DEVUELVE ESTA FUNCIÓN
     async getPairById(pairId: number) {
-        this.octokit = new Octokit({ auth: process.env.GH_TOKEN });
-
         const pairFound = await this.prisma.pair.findUnique({
             where: {
                 id: pairId,
