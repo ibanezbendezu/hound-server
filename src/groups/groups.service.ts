@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { Cluster } from "@prisma/client";
+import { Group } from "@prisma/client";
 import { RepositoriesService } from "src/repositories/repositories.service";
 import { ComparisonsService } from "src/comparisons/comparisons.service";
 import { createHash } from 'crypto';
@@ -8,10 +8,10 @@ import { compoundHash } from "src/shared";
 import { GithubService } from "src/github/github.service";
 
 /**
- * Servicio que maneja todas las operaciones relacionadas con los clusters.
+ * Servicio que maneja todas las operaciones relacionadas con los groups.
  */
 @Injectable()
-export class ClustersService {
+export class GroupsService {
 
     constructor(
         private repository: RepositoriesService,
@@ -20,8 +20,8 @@ export class ClustersService {
         private prisma: PrismaService) {
     }
 
-    async getAllClusters(): Promise<Cluster[]> {
-        return this.prisma.cluster.findMany({
+    async getAllGroups(): Promise<Group[]> {
+        return this.prisma.group.findMany({
             include: {
                 comparisons: {
                     select: {
@@ -33,8 +33,8 @@ export class ClustersService {
         });
     }
 
-    async getClusterById(id: number): Promise<Cluster> {
-        const clusterFind = this.prisma.cluster.findUnique({
+    async getGroupById(id: number): Promise<Group> {
+        const groupFind = this.prisma.group.findUnique({
             where: {
                 id: id
             },
@@ -57,18 +57,18 @@ export class ClustersService {
                 }
             }
         });
-        return clusterFind;
+        return groupFind;
     }
 
     /**
-     * Método que obtiene un cluster por su SHA.
-     * SHA es un hash único que identifica un cluster.
+     * Método que obtiene un group por su SHA.
+     * SHA es un hash único que identifica un group.
      * @param sha
-     * @returns Cluster data.
+     * @returns Group data.
      */
     // ARREGLAR EL TIPO QUE DEVUELVE
-    async getClusterBySha(sha: string): Promise<any> {
-        const clusterFind = this.prisma.cluster.findUnique({
+    async getGroupBySha(sha: string): Promise<any> {
+        const groupFind = this.prisma.group.findUnique({
             where: {
                 sha: sha
             },
@@ -124,7 +124,7 @@ export class ClustersService {
             }
         });
 
-        const cf = await clusterFind;
+        const cf = await groupFind;
         const comparisons = cf.comparisons;
 
         const groupedByRepository = comparisons.reduce((acc, comparison) => {
@@ -221,7 +221,7 @@ export class ClustersService {
         const result = {
             id: cf.id,
             sha: cf.sha,
-            date: cf.clusterDate,
+            date: cf.groupDate,
             numberOfRepos: 0,
             numberOfFolders: 0,
             numberOfFiles: 0,
@@ -288,13 +288,13 @@ export class ClustersService {
     }
 
     /**
-     * Método que crea un cluster a partir de una lista de repositorios.
+     * Método que crea un group a partir de una lista de repositorios.
      * @param repos
      * @param username
-     * @returns Cluster data.
+     * @returns Group data.
      */
     // ARREGLAR EL TIPO QUE DEVUELVE
-    async createCluster(repos: any[], username: string) {
+    async createGroup(repos: any[], username: string) {
         console.log(repos);
         console.log(username);
 
@@ -304,21 +304,21 @@ export class ClustersService {
 
         const concatenatedShas = repositories.map(repo => repo.sha).join('');
         const currentTime = new Date().toISOString();
-        const clusterSha = createHash('sha256').update(concatenatedShas + currentTime).digest('hex');
+        const groupSha = createHash('sha256').update(concatenatedShas + currentTime).digest('hex');
 
-        let cluster = await this.prisma.cluster.create({
+        let group = await this.prisma.group.create({
             data: {
-                sha: clusterSha,
-                clusterDate: new Date(),
+                sha: groupSha,
+                groupDate: new Date(),
                 numberOfRepos: repositories.length
             }
         });
 
         for (let i = 0; i < repositories.length; i++) {
             for (let j = i + 1; j < repositories.length; j++) {
-                let comparison = await this.comparisons.createComparation(repositories[i], repositories[j], cluster.id);
-                cluster = await this.prisma.cluster.update({
-                    where: { id: cluster.id },
+                let comparison = await this.comparisons.createComparation(repositories[i], repositories[j], group.id);
+                group = await this.prisma.group.update({
+                    where: { id: group.id },
                     data: {
                         comparisons: { connect: { id: comparison.id } }
                     }
@@ -327,14 +327,14 @@ export class ClustersService {
                 comparison = await this.prisma.comparison.update({
                     where: { id: comparison.id },
                     data: {
-                        clusters: { connect: { id: cluster.id } }
+                        groups: { connect: { id: group.id } }
                     }
                 });
             }
         }
 
-        const newCluster = await this.prisma.cluster.findUnique({
-            where: { id: cluster.id },
+        const newGroup = await this.prisma.group.findUnique({
+            where: { id: group.id },
             include: {
                 comparisons: {
                     include: {
@@ -351,27 +351,27 @@ export class ClustersService {
             };
         });
 
-        return { ...newCluster, repositories: rps };
+        return { ...newGroup, repositories: rps };
     }
 
-    async updateCluster(id: number, repos: any[], username: string) {
+    async updateGroup(id: number, repos: any[], username: string) {
         const repositories = await Promise.all(repos.map(async (repo) => {
             return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
 
-        let cluster = await this.prisma.cluster.update({
+        let group = await this.prisma.group.update({
             where: { id: id },
             data: {
-                clusterDate: new Date(),
+                groupDate: new Date(),
                 numberOfRepos: repositories.length
             }
         });
 
         for (let i = 0; i < repositories.length; i++) {
             for (let j = i + 1; j < repositories.length; j++) {
-                let comparison = await this.comparisons.createComparation(repositories[i], repositories[j], cluster.id);
-                cluster = await this.prisma.cluster.update({
-                    where: { id: cluster.id },
+                let comparison = await this.comparisons.createComparation(repositories[i], repositories[j], group.id);
+                group = await this.prisma.group.update({
+                    where: { id: group.id },
                     data: {
                         comparisons: { connect: { id: comparison.id } }
                     }
@@ -380,14 +380,14 @@ export class ClustersService {
                 comparison = await this.prisma.comparison.update({
                     where: { id: comparison.id },
                     data: {
-                        clusters: { connect: { id: cluster.id } }
+                        groups: { connect: { id: group.id } }
                     }
                 });
             }
         }
 
-        const newCluster = await this.prisma.cluster.findUnique({
-            where: { id: cluster.id },
+        const newGroup = await this.prisma.group.findUnique({
+            where: { id: group.id },
             include: {
                 comparisons: {
                     include: {
@@ -404,24 +404,24 @@ export class ClustersService {
             };
         });
 
-        return { ...newCluster, repositories: rps };
+        return { ...newGroup, repositories: rps };
     }
 
     /**
-     * Método que actualiza un cluster a partir de una lista de repositorios.
-     * SHA es un hash único que identifica un cluster.
+     * Método que actualiza un group a partir de una lista de repositorios.
+     * SHA es un hash único que identifica un group.
      * @param sha
      * @param repos
      * @param username
-     * @returns Cluster data.
+     * @returns Group data.
     */
     // ARREGLAR EL TIPO QUE DEVUELVE
-    async updateClusterBySha(sha: string, repos: any[], username: string) {
+    async updateGroupBySha(sha: string, repos: any[], username: string) {
         const repositories = await Promise.all(repos.map(async (repo) => {
             return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
 
-        let cluster = await this.prisma.cluster.update({
+        let group = await this.prisma.group.update({
             where: { sha: sha },
             data: {
                 numberOfRepos: repositories.length
@@ -430,9 +430,9 @@ export class ClustersService {
 
         for (let i = 0; i < repositories.length; i++) {
             for (let j = i + 1; j < repositories.length; j++) {
-                let comparison = await this.comparisons.createComparation(repositories[i], repositories[j], cluster.id);
-                cluster = await this.prisma.cluster.update({
-                    where: { id: cluster.id },
+                let comparison = await this.comparisons.makeComparison(repositories[i], repositories[j]);
+                group = await this.prisma.group.update({
+                    where: { id: group.id },
                     data: {
                         comparisons: { connect: { id: comparison.id } }
                     }
@@ -441,14 +441,14 @@ export class ClustersService {
                 comparison = await this.prisma.comparison.update({
                     where: { id: comparison.id },
                     data: {
-                        clusters: { connect: { id: cluster.id } }
+                        groups: { connect: { id: group.id } }
                     }
                 });
             }
         }
 
-        const newCluster = await this.prisma.cluster.findUnique({
-            where: { id: cluster.id },
+        const newGroup = await this.prisma.group.findUnique({
+            where: { id: group.id },
             include: {
                 comparisons: {
                     include: {
@@ -465,12 +465,12 @@ export class ClustersService {
             };
         });
 
-        return { ...newCluster, repositories: rps };
+        return { ...newGroup, repositories: rps };
     }
 
-    async getFilesByClusterId(clusterId: number) {
-        const comparisons = await this.prisma.cluster.findUnique({
-            where: { id: clusterId },
+    async getFilesByGroupId(groupId: number) {
+        const comparisons = await this.prisma.group.findUnique({
+            where: { id: groupId },
             select: { comparisons: { select: { id: true } } },
         });
         const comparisonIds = comparisons.comparisons.map(c => c.id);
@@ -493,14 +493,14 @@ export class ClustersService {
     }
 
     /**
-     * Método que obtiene los archivos de un cluster a partir de su SHA.
-     * SHA es un hash único que identifica un cluster.
+     * Método que obtiene los archivos de un group a partir de su SHA.
+     * SHA es un hash único que identifica un group.
      * @param sha
      * @returns Files data.
      */
     // ARREGLAR EL TIPO QUE DEVUELVE    
-    async getFilesByClusterSha(sha: string) {
-        const comparisons = await this.prisma.cluster.findUnique({
+    async getFilesByGroupSha(sha: string) {
+        const comparisons = await this.prisma.group.findUnique({
             where: { sha: sha },
             select: { comparisons: { select: { id: true } } },
         });
@@ -523,9 +523,9 @@ export class ClustersService {
         return files;
     }
 
-    async getPairSimilaritiesByClusterId(clusterId: number) {
-        const comparisons = await this.prisma.cluster.findUnique({
-            where: { id: clusterId },
+    async getPairSimilaritiesByGroupId(groupId: number) {
+        const comparisons = await this.prisma.group.findUnique({
+            where: { id: groupId },
             select: { comparisons: { select: { id: true } } },
         });
         const comparisonIds = comparisons.comparisons.map(c => c.id);
@@ -569,14 +569,14 @@ export class ClustersService {
     }
 
     /**
-     * Método que obtiene las similitudes de los pares de un cluster a partir de su SHA.
-     * SHA es un hash único que identifica un cluster.
+     * Método que obtiene las similitudes de los pares de un group a partir de su SHA.
+     * SHA es un hash único que identifica un group.
      * @param sha
      * @returns Pair similarities data.
      */
     // ARREGLAR EL TIPO QUE DEVUELVE
-    async getPairSimilaritiesByClusterSha(sha: string) {
-        const comparisons = await this.prisma.cluster.findUnique({
+    async getPairSimilaritiesByGroupSha(sha: string) {
+        const comparisons = await this.prisma.group.findUnique({
             where: { sha: sha },
             select: { comparisons: { select: { id: true } } },
         });
@@ -621,13 +621,13 @@ export class ClustersService {
     }
 
     /**
-     * Método que crea un cluster a partir de una lista de repositorios.
+     * Método que crea un group a partir de una lista de repositorios.
      * @param repos
      * @param username
-     * @returns Cluster data.
+     * @returns Group data.
      */
     // ARREGLAR EL TIPO QUE DEVUELVE
-    async makeCluster(repos: any[], username: string) {
+    async makeGroup(repos: any[], username: string) {
         console.log(repos);
         console.log(username);
 
@@ -637,11 +637,11 @@ export class ClustersService {
 
         console.log("Contenido de los repositorios obtenido");
 
-        const clusterSha = compoundHash(repositoryContents, true);
-        let cluster = await this.prisma.cluster.create({
+        const groupSha = compoundHash(repositoryContents, true);
+        let group = await this.prisma.group.create({
             data: {
-                sha: clusterSha,
-                clusterDate: new Date(),
+                sha: groupSha,
+                groupDate: new Date(),
                 numberOfRepos: repos.length
             }
         });
@@ -651,8 +651,8 @@ export class ClustersService {
                 console.log(`\nComparando ${repositoryContents[i].name} con ${repositoryContents[j].name}`);
                 let comparison = await this.comparisons.makeComparison(repositoryContents[i], repositoryContents[j]);
                 console.log(`Comparación realizada: ${comparison.id}`);
-                cluster = await this.prisma.cluster.update({
-                    where: { id: cluster.id },
+                group = await this.prisma.group.update({
+                    where: { id: group.id },
                     data: {
                         comparisons: { connect: { id: comparison.id } }
                     }
@@ -661,14 +661,14 @@ export class ClustersService {
                 comparison = await this.prisma.comparison.update({
                     where: { id: comparison.id },
                     data: {
-                        clusters: { connect: { id: cluster.id } }
+                        groups: { connect: { id: group.id } }
                     }
                 });
             }
         }
 
-        const newCluster = await this.prisma.cluster.findUnique({
-            where: { id: cluster.id },
+        const newGroup = await this.prisma.group.findUnique({
+            where: { id: group.id },
             include: {
                 comparisons: {
                     include: {
@@ -678,12 +678,10 @@ export class ClustersService {
             }
         });
 
-        return { ...newCluster, repositories: repos };
-
-        return cluster;
+        return { ...newGroup, repositories: repos };
     }
 
-    async doCluster(repos: any[], username: string) {
+    async doGroup(repos: any[], username: string) {
         console.log(repos);
         console.log(username);
 
@@ -693,11 +691,11 @@ export class ClustersService {
 
         console.log("Contenido de los repositorios obtenido");
 
-        const clusterSha = compoundHash(repositoryContents, true);
-        let cluster = await this.prisma.cluster.create({
+        const groupSha = compoundHash(repositoryContents, true);
+        let group = await this.prisma.group.create({
             data: {
-                sha: clusterSha,
-                clusterDate: new Date(),
+                sha: groupSha,
+                groupDate: new Date(),
                 numberOfRepos: repos.length
             }
         });
@@ -707,8 +705,8 @@ export class ClustersService {
                 console.log(`\nComparando ${repositoryContents[i].name} con ${repositoryContents[j].name}`);
                 let comparison = await this.comparisons.makeComparison(repositoryContents[i], repositoryContents[j]);
                 console.log(`Comparación realizada: ${comparison.id}`);
-                cluster = await this.prisma.cluster.update({
-                    where: { id: cluster.id },
+                group = await this.prisma.group.update({
+                    where: { id: group.id },
                     data: {
                         comparisons: { connect: { id: comparison.id } }
                     }
@@ -717,12 +715,12 @@ export class ClustersService {
                 comparison = await this.prisma.comparison.update({
                     where: { id: comparison.id },
                     data: {
-                        clusters: { connect: { id: cluster.id } }
+                        groups: { connect: { id: group.id } }
                     }
                 });
             }
         }
 
-        return cluster;
+        return group;
     }
 }

@@ -14,7 +14,7 @@ export class ComparisonsService {
         }
     }
 
-    async createComparation(leftRepository: any, rightRepository: any, clusterId: number) {
+    async createComparation(leftRepository: any, rightRepository: any, groupId: number) {
         try {
             const dolosFile = new Dolos();
 
@@ -473,7 +473,7 @@ export class ComparisonsService {
     }
 
 
-    async doComparison(leftRepository: any, rightRepository: any, clusterId?: number) {
+    async doComparison(leftRepository: any, rightRepository: any, groupId?: number) {
         try {
             const dolos = new Dolos();
     

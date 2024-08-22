@@ -1,65 +1,59 @@
-import { Test, TestingModule } from "@nestjs/testing";
 
-import { UsersService } from "./users.service";
-import { PrismaService } from 'src/prisma/prisma.service';
-import { mockDeep } from 'jest-mock-extended';
-import { Profile } from 'passport-github2';
-import { AuthProvider } from '../shared';
+import { UsersService } from './users.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { User } from '@prisma/client';
+import { Test } from '@nestjs/testing';
 
+describe('The UsersService', () => {
+	let usersService: UsersService;
+	let findUniqueMock: jest.Mock;
+	beforeEach(async () => {
+		findUniqueMock = jest.fn();
+		const module = await Test.createTestingModule({
+			providers: [
+				UsersService,
+				{
+					provide: PrismaService,
+					useValue: {
+						user: {
+							findUnique: findUniqueMock,
+						},
+					},
+				},
+			],
+		}).compile();
 
-describe("UsersService", () => {
-    let service: UsersService;
-    let prisma: any;
-
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                UsersService,
-                { provide: PrismaService, useValue: mockDeep<PrismaService>() },
-            ],
-        }).compile();
-
-        service = module.get<UsersService>(UsersService);
-        prisma = module.get<PrismaService>(PrismaService);
-    });
-
-    it("should be defined", () => {
-        expect(service).toBeDefined();
-    });
-
-    it('should find or create a user', async () => {
-        const profile: Profile = {
-          id: '123',
-          username: 'testuser',
-          emails: [{ value: 'test@example.com' }],
-          displayName: 'Test User',
-          photos: [],
-          provider: 'github',
-          profileUrl: '',
-        };
-        const accessToken = 'fake-token';
-        const provider: AuthProvider = 'github';
-    
-        prisma.user.findUnique.mockResolvedValue(null);
-        prisma.user.create.mockResolvedValue({
-          id: 1,
-          githubId: 123,
-          name: 'testuser',
-          githubToken: accessToken,
-        });
-    
-        const result = await service.findOrCreate(profile, accessToken, provider);
-    
-        expect(result).toEqual({
-          id: '1',
-          provider,
-          providerId: '123',
-          username: 'testuser',
-          email: 'test@example.com',
-          displayName: 'Test User',
-          photos: [],
-        });
-        expect(prisma.user.create).toHaveBeenCalled();
-      });
-    
+		usersService = await module.get(UsersService);
+	});
+	describe('when the getByEmail function is called', () => {
+		describe('and the findUnique method returns the user', () => {
+			let user: User;
+			beforeEach(() => {
+				user = {
+					id: 1,
+					githubId: 123,
+					username: 'johnsmith',
+					name: 'John Smith',
+					email: 'js@gmail.com',
+					githubToken: 'token',
+				};
+				findUniqueMock.mockResolvedValue(user);
+			});
+			it('should return the user', async () => {
+				const result = await usersService.getUserByUsername('johnsmith');
+				expect(result).toBe(user);
+			});
+		});
+		describe('and the findUnique method does not return the user', () => {
+			beforeEach(() => {
+				findUniqueMock.mockResolvedValue(undefined);
+			});
+			it('should throw the UserNotFoundException', async () => {
+				return expect(async () => {
+					await usersService.getUserByUsername('johnsmith');
+				}
+				).rejects.toThrow('User not found');
+			});
+		});
+	});
 });

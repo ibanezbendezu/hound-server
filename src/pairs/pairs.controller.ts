@@ -23,17 +23,17 @@ export class PairsController {
     }
 
     /**
-     * Endpoint que obtiene los pares de un cluster por su SHA.
-     * SHA es un hash único que identifica un cluster.
-     * @param sha SHA del cluster.
-     * @returns Pares del cluster.
+     * Endpoint que obtiene los pares de un group por su SHA.
+     * SHA es un hash único que identifica un group.
+     * @param sha SHA del group.
+     * @returns Pares del group.
      */
     @Get("/sha/:sha/:fileSha")
-    async getPairsByClusterSha(
+    async getPairsByGroupSha(
         @Param("sha") sha: string,
         @Param("fileSha") fileSha: string,
     ){
-        const pairsFound = await this.pairsService.getPairsByClusterSha(sha, fileSha);
+        const pairsFound = await this.pairsService.getPairsByGroupSha(sha, fileSha);
         if (!pairsFound) throw new NotFoundException("Pairs not found");
         return pairsFound;
     }

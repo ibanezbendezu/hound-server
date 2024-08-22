@@ -103,14 +103,14 @@ export class PairsService {
     }
 
     /**
-     * Obtiene los pares de un cluster por su SHA.
-     * SHA es un hash único que identifica un cluster.
-     * @param clusterSha SHA del cluster.
+     * Obtiene los pares de un group por su SHA.
+     * SHA es un hash único que identifica un group.
+     * @param groupSha SHA del group.
      * @param fileSha SHA del archivo.
-     * @returns Pares del cluster.
+     * @returns Pares del group.
      */
     // ARREGLAR EL TIPO DE DATO QUE DEVUELVE ESTA FUNCIÓN
-    async getPairsByClusterSha(clusterSha: string, fileSha: string) {
+    async getPairsByGroupSha(groupSha: string, fileSha: string) {
         const fileFound = await this.prisma.file.findUnique({
             where: {
                 sha: fileSha,
@@ -129,9 +129,9 @@ export class PairsService {
         const pairsFound = await this.prisma.pair.findMany({
             where: {
                 comparison: {
-                    clusters: {
+                    groups: {
                         some: {
-                            sha: clusterSha,
+                            sha: groupSha,
                         },
                     },
                 },

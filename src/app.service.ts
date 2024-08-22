@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { Dolos } from "./dolos";
-import { ClustersService } from "./clusters/clusters.service";
+import { GroupsService } from "./groups/groups.service";
 
 @Injectable()
 export class AppService {
 
     constructor(
-        private cluster: ClustersService
+        private group: GroupsService
     ) {
     }
 
@@ -121,7 +121,7 @@ export class AppService {
             { owner: "ibanezbendezu", name: "tttest3" }, */
         ];
         
-        const results = await this.cluster.makeCluster(repos, username);
+        const results = await this.group.makeGroup(repos, username);
 
         return results;
     }

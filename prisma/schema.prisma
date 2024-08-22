@@ -14,14 +14,16 @@ datasource db {
 model User {
   id Int @id @default(autoincrement())
   githubId Int @unique
-  name String @unique
-  githubToken String
+  username String @unique
+  name String?
+  email String?
+  githubToken String?
 }
 
-model Cluster {
+model Group {
   id Int @id @default(autoincrement())
   sha String @unique
-  clusterDate DateTime @default(now())
+  groupDate DateTime @default(now())
   comparisons Comparison[]
   numberOfRepos Int
 }
@@ -32,7 +34,7 @@ model Comparison {
   similarity Float
   comparisonDate DateTime @default(now())
 
-  clusters Cluster[]
+  groups Group[]
 
   repositories Repository[]
 

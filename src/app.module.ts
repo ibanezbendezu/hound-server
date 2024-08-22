@@ -1,7 +1,7 @@
 import { GithubModule } from './github/github.module';
 import { PairsModule } from './pairs/pairs.module';
 import { FilesModule } from './files/files.module';
-import { ClustersModule } from "./clusters/clusters.module";
+import { GroupsModule } from "./groups/groups.module";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
@@ -17,7 +17,7 @@ import { ComparisonsModule } from "./comparisons/comparisons.module";
         GithubModule,
         PairsModule,
         FilesModule,
-        ClustersModule, ConfigModule.forRoot({ isGlobal: true, load: [appConfig] }),
+        GroupsModule, ConfigModule.forRoot({ isGlobal: true, load: [appConfig] }),
         GithubOauthModule, RepositoriesModule, ComparisonsModule],
     controllers: [AppController],
     providers: [AppService]

@@ -34,7 +34,9 @@ export class UsersService {
             user = await this.prisma.user.create({
                 data: {
                     githubId: githubId,
-                    name: username,
+                    username: username,
+                    name: displayName || username,
+                    email: emails ? emails[0].value : "",
                     githubToken: accessToken
                 }
             });
@@ -92,16 +94,16 @@ export class UsersService {
         });
     }
 
-    async getUserByName(username: string): Promise<User> {
+    async getUserByUsername(username: string): Promise<User> {
         return this.prisma.user.findUnique({
             where: {
-                name: username
+                username: username
             }
         });
     }
 
     async getUserToken(username: string): Promise<string> {
-        const user = await this.getUserByName(username);
+        const user = await this.getUserByUsername(username);
         return user.githubToken;
     }
 }
