@@ -1,6 +1,4 @@
-FROM node:20 
-
-WORKDIR /app
+FROM node:20
 
 COPY ./dist ./dist
 
