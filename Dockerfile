@@ -1,8 +1,8 @@
 FROM node:20 
 
-WORKDIR /
+WORKDIR /app
 
-COPY /dist /dist
+COPY /app/dist /dist
 
 EXPOSE 5000
 CMD [ "node", "/dist/src/main" ]
