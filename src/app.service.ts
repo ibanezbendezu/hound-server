@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { Dolos } from "./dolos";
-import { GroupsService } from "./groups/groups.service";
+//import { Dolos } from "./dolos";
+//import { GroupsService } from "./groups/groups.service";
 
 @Injectable()
 export class AppService {
 
     constructor(
-        private group: GroupsService
+        //private group: GroupsService
     ) {
     }
 
@@ -14,7 +14,7 @@ export class AppService {
         return "Hello World!";
     }
 
-    async dolosTest() {
+    /* async dolosTest() {
         const files = [
             {"path": "src/main/java/controllers/ClockController.java",
                 "content": `package cl.tingeso.mueblesstgo.controllers;
@@ -108,21 +108,21 @@ export class AppService {
             }
             console.log("--------------------------------------------------");
         }
-    }
+    } */
 
-    async makeComparison() {
+    /* async makeComparison() {
         const username = "ibanezbendezu";
         const repos = [
             { owner: "ibanezbendezu", name: "tingeso-ev1" },
             { owner: "holYadio", name: "TingesoPEP1" },
             { owner: "Issipisi", name: "Proyecto1_Tingeso" },
-            /* { owner: "ibanezbendezu", name: "tttest" },
+            { owner: "ibanezbendezu", name: "tttest" },
             { owner: "ibanezbendezu", name: "tttest2" },
-            { owner: "ibanezbendezu", name: "tttest3" }, */
+            { owner: "ibanezbendezu", name: "tttest3" },
         ];
         
-        const results = await this.group.makeGroup(repos, username);
+        const results = await this.group.doGroup(repos, username);
 
         return results;
-    }
+    } */
 }

@@ -31,7 +31,7 @@ export class UsersService {
         });
 
         if (!user) {
-            user = await this.prisma.user.create({
+            await this.prisma.user.create({
                 data: {
                     githubId: githubId,
                     username: username,
@@ -79,31 +79,26 @@ export class UsersService {
     }
 
     async getUserById(id: number): Promise<User> {
-        return this.prisma.user.findUnique({
-            where: {
-                id
-            }
-        });
-    }
-
-    async getUserByGithubId(id: number): Promise<User> {
-        return this.prisma.user.findUnique({
-            where: {
-                githubId: id
-            }
-        });
+        const user = await this.prisma.user.findUnique({ where: { id } });
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
     }
 
     async getUserByUsername(username: string): Promise<User> {
-        return this.prisma.user.findUnique({
-            where: {
-                username: username
-            }
-        });
+        const user = await this.prisma.user.findUnique({ where: { username } });
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
     }
 
     async getUserToken(username: string): Promise<string> {
         const user = await this.getUserByUsername(username);
+        if (!user.githubToken) {
+            throw new Error("User has no token");
+        }
         return user.githubToken;
     }
 }

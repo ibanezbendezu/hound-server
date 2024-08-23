@@ -23,21 +23,21 @@ export class AppController {
         return req.user;
     }
 
-    @Get("protected")
+    /* @Get("protected")
     @UseGuards(JwtAuthGuard)
     getProtectedResource(@Req() req: Request) {
         return "Este es un recurso protegido";
-    }
+    } */
 
-    @Get("dolos")
+    /* @Get("dolos")
     dolos() {
         return this.appService.dolosTest();
-    }
+    } */
 
-    @Get("/make")
+    /* @Get("/make")
     async makeComparison() {
         const comparison = await this.appService.makeComparison();
         if (!comparison) throw new NotFoundException("Comparison not created");
         return comparison;
-    }
+    } */
 }
