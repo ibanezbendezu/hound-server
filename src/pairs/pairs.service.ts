@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { FilesService } from 'src/files/files.service';
 
 /**
  * Servicio que maneja todas las solicitudes relacionadas con los pares.
@@ -9,7 +8,6 @@ import { FilesService } from 'src/files/files.service';
 export class PairsService {
     constructor(
         private prisma: PrismaService,
-        private readonly filesService: FilesService,
     ) {
     }
 

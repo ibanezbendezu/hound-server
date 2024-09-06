@@ -124,6 +124,30 @@ export class GithubService {
     }
 
     /**
+     * Obtiene el contenido de un archivo por su ID.
+     * @param id ID del archivo.
+     * @param username Nombre de usuario del propietario del archivo.
+     * @returns Contenido del archivo.
+     */
+    async getFileContentById(id: number, username: string) {
+        const user_token = await this.user.getUserToken(username);
+        const token = user_token || process.env.GH_TOKEN;
+        this.octokit = new Octokit({ auth: token });
+
+        const file = await this.prisma.file.findUnique({
+            where: { id },
+            include: { repository: {
+                select: { owner: true, name: true }
+            }}
+        });
+
+        if (!file) return null;
+
+        const content = await this.getFileContent(file.repository.owner, file.repository.name, file.sha);
+        return content;
+    }
+
+    /**
      * Obtiene el contenido de un archivo por su SHA.
      * @param sha SHA del archivo.
      * @param username Nombre de usuario del propietario del archivo.

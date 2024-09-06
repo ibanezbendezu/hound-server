@@ -36,7 +36,25 @@ export class GithubController {
         }
     }
 
-    @Get("file/:sha/content")
+    @Get("file/:id/content")
+    async getFileContentById(
+        @Param("id") id: string,
+        @Headers('authorization') authorizationHeader: string
+    ){
+        try {
+            const token = authorizationHeader.split(' ')[1];
+            const decoded = this.jwt.verifyToken(token);
+            const username = decoded.username;
+
+            const fileFound = await this.githubService.getFileContentById(Number(id), username);
+            if (!fileFound) throw new NotFoundException("File not found");
+            return fileFound;
+        } catch (error) {
+            throw new NotFoundException("Token inválido o expirado");
+        }
+    }
+
+    @Get("file/sha/:sha/content")
     async getFileContentBySha(
         @Param("sha") sha: string,
         @Headers('authorization') authorizationHeader: string

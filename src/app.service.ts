@@ -14,6 +14,10 @@ export class AppService {
         return "Hello World!";
     }
 
+    getProtectedResource(): string {
+        return "Este es un recurso protegido";
+    }
+
     /* async dolosTest() {
         const files = [
             {"path": "src/main/java/controllers/ClockController.java",

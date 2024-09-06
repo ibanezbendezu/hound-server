@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, NotFoundException, Put } from "@nestjs/common";
 import { GroupsService } from "./groups.service";
-import { RepositoryDto as Repo } from "../comparisons/dto/repo";
+import { RepositoryDto } from "./dto/repository";
 
 /**
  * Controlador que maneja todas las solicitudes relacionadas con los groups.
@@ -84,7 +84,7 @@ export class GroupsController {
     }
 
     @Put(":id")
-    async updateGroup(@Param("id") id: string, @Body() body: { repos: Repo[], username: string }) {
+    async updateGroup(@Param("id") id: string, @Body() body: { repos: RepositoryDto[], username: string }) {
         console.log("updateGroup in server", body);
         const groupUpdated = await this.groupsService.updateGroup(Number(id), body.repos, body.username);
         if (!groupUpdated) throw new NotFoundException("Group not updated");
@@ -99,7 +99,7 @@ export class GroupsController {
      * @returns Group actualizado
      */
     @Put("/sha/:sha")
-    async updateGroupBySha(@Param("sha") sha: string, @Body() body: { repos: Repo[], username: string }) {
+    async updateGroupBySha(@Param("sha") sha: string, @Body() body: { repos: RepositoryDto[], username: string }) {
         console.log("updateGroupBySha in server", body);
         const groupUpdated = await this.groupsService.updateGroupBySha(sha, body.repos, body.username);
         if (!groupUpdated) throw new NotFoundException("Group not updated");

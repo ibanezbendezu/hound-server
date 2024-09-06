@@ -1,6 +1,5 @@
 import { Controller, Get, Param, NotFoundException } from "@nestjs/common";
 import { PairsService } from './pairs.service';
-import { JwtAuthService } from "../auth/jwt/jwt-auth.service";
 
 /**
  * Controlador que maneja todas las solicitudes relacionadas con los pares.
@@ -9,7 +8,6 @@ import { JwtAuthService } from "../auth/jwt/jwt-auth.service";
 export class PairsController {
     constructor(
         private readonly pairsService: PairsService,
-        private readonly jwt: JwtAuthService
     ) {
     }
 

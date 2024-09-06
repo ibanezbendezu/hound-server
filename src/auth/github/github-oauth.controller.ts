@@ -55,29 +55,18 @@ export class GithubOauthController {
         res.redirect(`${process.env.CLIENT_URL}/welcome`);
     }
 
-    @Get("logout")
-    async logout(@Res({ passthrough: true }) res: Response) {
-        res.clearCookie("jwt");
-        return { message: "Logout successful" };
-    }
-
     @Get("refresh")
-    @UseGuards(JwtAuthGuard)
     async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
         const user = req.user as User;
         const { accessToken } = this.jwtAuthService.login(user);
 
         res.cookie("jwt", accessToken);
-        return { access_token: accessToken };
+        return { accessToken: accessToken };
     }
 
-    @Get("check")
-    @UseGuards(JwtAuthGuard)
-    async check(@Req() req: Request, @Res() res: Response) {
-        if (req.isAuthenticated()) {
-            res.send({ user: req.user });
-        } else {
-            res.send({ user: null });
-        }
+    @Get("logout")
+    async logout(@Res({ passthrough: true }) res: Response) {
+        res.clearCookie("jwt");
+        return { message: "Logout successful" };
     }
 }

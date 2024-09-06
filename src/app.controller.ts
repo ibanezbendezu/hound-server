@@ -10,8 +10,13 @@ export class AppController {
     ) {
     }
 
-    @Get()
+    @Get("protected")
     @UseGuards(JwtAuthGuard)
+    getProtect(): string {
+        return this.appService.getProtectedResource();
+    }
+
+    @Get()
     getHello(): string {
         return this.appService.getHello();
     }
@@ -22,12 +27,6 @@ export class AppController {
         console.log("SE ENVIÓ UN PROFILE");
         return req.user;
     }
-
-    /* @Get("protected")
-    @UseGuards(JwtAuthGuard)
-    getProtectedResource(@Req() req: Request) {
-        return "Este es un recurso protegido";
-    } */
 
     /* @Get("dolos")
     dolos() {

@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { Profile } from "passport-github2";
 import { PrismaService } from "src/prisma/prisma.service";
-import { User } from "../types";
-import { AuthProvider, User as DummyUser } from "../shared";
+import { User } from "@prisma/client";
+import { AuthProvider, User as GHUser } from "../shared";
 
 /**
  * Servicio que maneja todas las operaciones relacionadas con los usuarios.
@@ -18,9 +18,9 @@ export class UsersService {
      * @param profile Perfil de GitHub.
      * @param accessToken Token de acceso de GitHub.
      * @param provider Proveedor de autenticación.
-     * @returns Usuario.
+     * @returns Usuario de GitHub.
      */
-    async findOrCreate(profile: Profile, accessToken: string, provider: AuthProvider): Promise<DummyUser> {
+    async findOrCreate(profile: Profile, accessToken: string, provider: AuthProvider): Promise<GHUser> {
         const { id, username, emails, displayName, photos } = profile;
         const githubId: number = +id;
 

@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { Group } from "@prisma/client";
-import { RepositoriesService } from "src/repositories/repositories.service";
 import { ComparisonsService } from "src/comparisons/comparisons.service";
 import { createHash } from 'crypto';
 import { compoundHash } from "src/shared";
@@ -14,7 +13,6 @@ import { GithubService } from "src/github/github.service";
 export class GroupsService {
 
     constructor(
-        private repository: RepositoriesService,
         private comparisons: ComparisonsService,
         private github: GithubService,
         private prisma: PrismaService) {
