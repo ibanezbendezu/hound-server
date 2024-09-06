@@ -10,17 +10,17 @@ export class AppController {
     ) {
     }
 
-    @Get("protected")
-    @UseGuards(JwtAuthGuard)
-    getProtect(): string {
-        return this.appService.getProtectedResource();
-    }
-
     @Get()
     getHello(): string {
         return this.appService.getHello();
     }
 
+    @Get("protected")
+    @UseGuards(JwtAuthGuard)
+    getProtect(): string {
+        return this.appService.getProtectedResource();
+    }
+    
     @Get("profile")
     @UseGuards(JwtAuthGuard)
     profile(@Req() req: Request) {
