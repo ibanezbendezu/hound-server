@@ -26,9 +26,10 @@ export class GithubService {
      * Obtiene el perfil de un usuario de GitHub y sus repositorios.
      * @param owner Nombre del usuario.
      * @param username Nombre de usuario del propietario del repositorio.
+     * @param language Lenguaje de programación.
      * @returns Perfil del usuario y sus repositorios.
      */
-    async getOwnerData(owner: string, username: string ) {
+    async getOwnerData(owner: string, username: string, language: string = "Java"): Promise<any> {
         const user_token = await this.user.getUserToken(username);
         const token = user_token || process.env.GH_TOKEN;
         this.octokit = new Octokit({ auth: token });
@@ -39,8 +40,12 @@ export class GithubService {
 
             const reposRes = await this.octokit.repos.listForUser({ username: owner });
             const repos = reposRes.data;
-            const javaRepos = repos.filter(repo => repo.language === "Java");
 
+
+            // Filtrar repositorios por lenguaje
+            const javaRepos = repos.filter(repo => repo.language === language);
+
+            // Identificar proyectos de Spring Boot
             const springBootProjects = [];
             const identifyPromises = javaRepos.map(async (repo) => {
                 const isSpringBoot = await this.identifySpringBootProject(owner, repo.name);
@@ -48,8 +53,8 @@ export class GithubService {
                     springBootProjects.push(repo);
                 }
             });
-
             await Promise.all(identifyPromises);
+
 
             return { ownerProfile, repos: springBootProjects };
         } catch (error) {
@@ -66,9 +71,19 @@ export class GithubService {
      * @param username Nombre de usuario del propietario del repositorio.
      * @param page Número de página.
      * @param perPage Cantidad de elementos por página.
+     * @param prefix Prefijo de los archivos a filtrar.
+     * @param extension Extensión de los archivos a filtrar.
      * @returns Contenido del repositorio filtrado por tipo de archivo.
      */
-    async getFilteredRepositoryContent(owner: string, name: string, username: string, page: number = 1, perPage: number = 100): Promise<any> {
+    async getFilteredRepositoryContent(
+        owner: string,
+        name: string,
+        username: string,
+        page: number = 1,
+        perPage: number = 100,
+        prefix: string = "src/main/java/",
+        extension?: string
+    ): Promise<any> {
         const user_token = await this.user.getUserToken(username);
         const token = user_token || process.env.GH_TOKEN;
     
@@ -90,7 +105,14 @@ export class GithubService {
                 per_page: perPage
             });
         
-            const files = data.tree.filter(item => item.type === "blob" && item.path.startsWith("src/main/java/"));
+            // Filtrar archivos por prefijo y extensión
+            const files = data.tree.filter(item => {
+                if (item.type !== "blob") return false;
+                if (prefix && !item.path.startsWith(prefix)) return false;
+                if (extension && !item.path.endsWith(extension)) return false;
+                return true;
+            });        
+        
         
             if (files.length === 0) {
                 throw new Error("No files found in the repository");
