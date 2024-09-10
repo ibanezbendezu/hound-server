@@ -52,11 +52,9 @@ export class GithubOauthController {
 
         console.log(`\nURL: ${process.env.CLIENT_URL}`);
         console.log(`Domain: ${process.env.CLIENT_DOMAIN}\n`);
-
-        res.cookie("jwt", accessToken);
-        res.cookie("user", JSON.stringify(userWithToken));
-
-        const key = atob(JSON.stringify({ user: userWithToken, jwt: accessToken }));
+        
+        const key = btoa(JSON.stringify({ user: userWithToken, jwt: accessToken }));
+        console.log(`Key: ${key}`);
         res.redirect(`${process.env.CLIENT_URL}/welcome?tk=${key}`);
     }
 
