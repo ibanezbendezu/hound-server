@@ -55,7 +55,9 @@ export class GithubOauthController {
 
         res.cookie("jwt", accessToken);
         res.cookie("user", JSON.stringify(userWithToken));
-        res.redirect(`${process.env.CLIENT_URL}/welcome`);
+
+        const key = atob(JSON.stringify({ user: userWithToken, jwt: accessToken }));
+        res.redirect(`${process.env.CLIENT_URL}/welcome?tk=${key}`);
     }
 
     @Get("refresh")
