@@ -50,6 +50,9 @@ export class GithubOauthController {
             githubToken: githubToken
         };
 
+        console.log(`User: ${JSON.stringify(userWithToken, null, 4)}`);
+        console.log(`URL: ${process.env.CLIENT_URL}/welcome`);
+
         res.cookie("jwt", accessToken);
         res.cookie("user", JSON.stringify(userWithToken));
         res.redirect(`${process.env.CLIENT_URL}/welcome`);
