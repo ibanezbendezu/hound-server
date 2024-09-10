@@ -53,16 +53,8 @@ export class GithubOauthController {
         console.log(`\nURL: ${process.env.CLIENT_URL}`);
         console.log(`Domain: ${process.env.CLIENT_DOMAIN}\n`);
 
-        res.cookie("jwt", accessToken, {
-            secure: true,
-            sameSite: 'none',
-            domain: process.env.CLIENT_DOMAIN,
-        });
-        res.cookie("user", JSON.stringify(userWithToken), {
-            secure: true,
-            sameSite: 'none',
-            domain: process.env.CLIENT_DOMAIN,
-        });
+        res.cookie("jwt", accessToken);
+        res.cookie("user", JSON.stringify(userWithToken));
         res.redirect(`${process.env.CLIENT_URL}/welcome`);
     }
 
