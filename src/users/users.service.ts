@@ -31,7 +31,7 @@ export class UsersService {
         });
 
         if (!user) {
-            await this.prisma.user.create({
+            user = await this.prisma.user.create({
                 data: {
                     githubId: githubId,
                     username: username,

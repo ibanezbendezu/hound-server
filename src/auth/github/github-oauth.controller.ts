@@ -57,13 +57,11 @@ export class GithubOauthController {
             secure: true,
             sameSite: 'none',
             domain: process.env.CLIENT_DOMAIN,
-            httpOnly: true
         });
         res.cookie("user", JSON.stringify(userWithToken), {
             secure: true,
             sameSite: 'none',
             domain: process.env.CLIENT_DOMAIN,
-            httpOnly: true
         });
         res.redirect(`${process.env.CLIENT_URL}/welcome`);
     }
