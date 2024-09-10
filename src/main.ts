@@ -9,10 +9,11 @@ async function bootstrap() {
 
     app.use(cookieParser());
 
+    console.log(process.env.CLIENT_URL);
     app.enableCors({
         origin: process.env.CLIENT_URL,
         allowedHeaders: ['Cookie', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-        methods: [ "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         credentials: true
     });
 

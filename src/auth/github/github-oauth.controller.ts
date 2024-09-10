@@ -53,8 +53,18 @@ export class GithubOauthController {
         console.log(`User: ${JSON.stringify(userWithToken, null, 4)}`);
         console.log(`URL: ${process.env.CLIENT_URL}/welcome`);
 
-        res.cookie("jwt", accessToken);
-        res.cookie("user", JSON.stringify(userWithToken));
+        res.cookie("jwt", accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
+        });
+        res.send('Cookie set');
+        res.cookie("user", JSON.stringify(userWithToken), {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
+        });
+        res.send('Cookie set');
         res.redirect(`${process.env.CLIENT_URL}/welcome`);
     }
 
