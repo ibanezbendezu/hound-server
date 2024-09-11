@@ -271,6 +271,17 @@ export class ComparisonsService {
         "vh": "verilog"
     };
 
+    async getComparisonBySha(leftSha: string, rightSha: string): Promise<Comparison> {
+        const sortStrings = [leftSha, rightSha].sort((a, b) => a.localeCompare(b));
+        const sha = sortStrings.join("");
+        const comparisonSha = createHash("sha256").update(sha).digest("hex");
+        const comparisonFound = await this.prisma.comparison.findUnique({ where: { sha: comparisonSha } });
+        if (comparisonFound) {
+            return comparisonFound;
+        }
+        return null;
+    }
+
     async makeComparison(leftRepository: any, rightRepository: any) {
         try {
             const dolos = new Dolos();
@@ -330,8 +341,6 @@ export class ComparisonsService {
                 })
             ]);
             
-            console.log("Comparing repositories: ", leftRepository.name, rightRepository.name);
-
             /* const promises = leftRepoFiles.flatMap((file1) =>
                 rightRepoFiles.map((file2) => dolos.analyze([file1.file, file2.file])
                     .then(similarityReport => ({

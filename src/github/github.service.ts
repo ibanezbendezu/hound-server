@@ -34,17 +34,23 @@ export class GithubService {
         const token = user_token || process.env.GH_TOKEN;
         this.octokit = new Octokit({ auth: token });
 
+        console.log(`\nOBTENIEDO DATOS DE ${owner}...\n`);
+
         try {
             const userRes = await this.octokit.users.getByUsername({ username: owner });
             const ownerProfile = userRes.data;
+            console.log(`PERFIL DE ${owner}: ${ownerProfile.name}`);
 
             const reposRes = await this.octokit.repos.listForUser({ username: owner });
             const repos = reposRes.data;
+            console.log(`REPOSITORIOS TOTALES DE ${owner}: ${repos.length}`);
 
 
             // Filtrar repositorios por lenguaje
             const javaRepos = repos.filter(repo => repo.language === language);
+            console.log(`REPOSITORIOS DE JAVA DE ${owner}: ${javaRepos.length}\n`);
 
+            console.log(`IDENTIFICANDO PROYECTOS DE SPRING BOOT MONOLÍTICOS...`);
             // Identificar proyectos de Spring Boot
             const springBootProjects = [];
             const identifyPromises = javaRepos.map(async (repo) => {
@@ -54,7 +60,7 @@ export class GithubService {
                 }
             });
             await Promise.all(identifyPromises);
-
+            console.log(`\nPROYECTOS DE SPRING BOOT DE ${owner}: ${springBootProjects.length}\n|`);
 
             return { ownerProfile, repos: springBootProjects };
         } catch (error) {
@@ -253,7 +259,13 @@ export class GithubService {
             });
     
             const files = data.tree;
-    
+
+            const hasSrcFolder = files.some(file => file.path === 'src' && file.type === 'tree');
+            if (!hasSrcFolder) {
+                console.log(`\tNo se encontró la carpeta src en el repositorio ${name}`);
+                return false;
+            }
+
             const pomFile = files.find((file: any) => file.path.endsWith('pom.xml'));
             const gradleFile = files.find((file: any) => file.path.endsWith('build.gradle'));
     
@@ -264,6 +276,7 @@ export class GithubService {
                     if (pomContent && pomContent.includes('<groupId>org.springframework.boot</groupId>')) {
                         return true;
                     }
+                    console.log(`\tNo es un proyecto de Spring Boot`);
                     return false;
                 }));
             }
@@ -273,6 +286,7 @@ export class GithubService {
                     if (gradleContent && gradleContent.includes('.springframework.boot')) {
                         return true;
                     }
+                    console.log(`\tNo es un proyecto de Spring Boot`);
                     return false;
                 }));
             }

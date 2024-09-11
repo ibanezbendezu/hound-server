@@ -55,7 +55,6 @@ export class GithubOauthController {
         
         const key = `${JSON.stringify(userWithToken)}@@${accessToken}`;
         const escapedKey = encodeURIComponent(key);
-        console.log(`Key: ${escapedKey}`);
         res.redirect(`${process.env.CLIENT_URL}/auth?tk=${escapedKey}`);
     }
 
