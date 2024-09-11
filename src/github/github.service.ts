@@ -117,7 +117,7 @@ export class GithubService {
                 if (prefix && !item.path.startsWith(prefix)) return false;
                 if (extension && !item.path.endsWith(extension)) return false;
                 return true;
-            });        
+            }); 
         
         
             if (files.length === 0) {
@@ -259,39 +259,49 @@ export class GithubService {
             });
     
             const files = data.tree;
-
             const hasSrcFolder = files.some(file => file.path === 'src' && file.type === 'tree');
+    
             if (!hasSrcFolder) {
-                console.log(`\tNo se encontró la carpeta src en el repositorio ${name}`);
+                console.log(`\t ${name} -> No se encontró la carpeta src en la raiz del repositorio`);
                 return false;
             }
+    
+            const pomFile = files.find(file => file.path.endsWith('pom.xml'));
+            const gradleFile = files.find(file => file.path.endsWith('build.gradle'));
+    
+            const buildFiles = [pomFile, gradleFile].filter(Boolean);
+    
+            if (buildFiles.length === 0) {
+                return false;
+            }
+    
+            const isSpringBootProject = async (file: any, keyword: string) => {
+                const content = await this.getFileContent(owner, name, file.sha);
+                if (content && content.includes(keyword)) {
+                    const javaFiles = files.filter(item =>
+                        item.type === "blob" &&
+                        item.path.startsWith("src/main/java/") &&
+                        item.path.endsWith(".java")
+                    );
+    
+                    const fileContents = await Promise.allSettled(javaFiles.map(file =>
+                        this.getFileContent(owner, name, file.sha)
+                    ));
+    
+                    return fileContents.some(result =>
+                        result.status === 'fulfilled' &&
+                        ['Service', 'Controller', 'Repository'].includes(this.identifyFileType(result.value))
+                    );
+                }
+                console.log(`\t ${name} -> No es un proyecto de Spring Boot`);
+                return false;
+            };
+    
+            const results = await Promise.all([
+                pomFile && isSpringBootProject(pomFile, '<groupId>org.springframework.boot</groupId>'),
+                gradleFile && isSpringBootProject(gradleFile, '.springframework.boot')
+            ].filter(Boolean));
 
-            const pomFile = files.find((file: any) => file.path.endsWith('pom.xml'));
-            const gradleFile = files.find((file: any) => file.path.endsWith('build.gradle'));
-    
-            const promises = [];
-    
-            if (pomFile) {
-                promises.push(this.getFileContent(owner, name, pomFile.sha).then(pomContent => {
-                    if (pomContent && pomContent.includes('<groupId>org.springframework.boot</groupId>')) {
-                        return true;
-                    }
-                    console.log(`\tNo es un proyecto de Spring Boot`);
-                    return false;
-                }));
-            }
-    
-            if (gradleFile) {
-                promises.push(this.getFileContent(owner, name, gradleFile.sha).then(gradleContent => {
-                    if (gradleContent && gradleContent.includes('.springframework.boot')) {
-                        return true;
-                    }
-                    console.log(`\tNo es un proyecto de Spring Boot`);
-                    return false;
-                }));
-            }
-    
-            const results = await Promise.all(promises);
             return results.includes(true);
     
         } catch (error) {
