@@ -53,9 +53,10 @@ export class GithubOauthController {
         console.log(`\nURL: ${process.env.CLIENT_URL}`);
         console.log(`Domain: ${process.env.CLIENT_DOMAIN}\n`);
         
-        const key = btoa(JSON.stringify({ user: userWithToken, jwt: accessToken }));
-        console.log(`Key: ${key}`);
-        res.redirect(`${process.env.CLIENT_URL}/welcome?tk=${key}`);
+        const key = `${JSON.stringify(userWithToken)}@@${accessToken}`;
+        const escapedKey = encodeURIComponent(key);
+        console.log(`Key: ${escapedKey}`);
+        res.redirect(`${process.env.CLIENT_URL}/auth?tk=${escapedKey}`);
     }
 
     @Get("refresh")
