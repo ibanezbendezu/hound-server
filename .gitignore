@@ -58,6 +58,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Prisma db
 /prisma/dev.db
 /prisma/dev.db-journal
-/prisma/migrations
+/prisma/migrations/
 
 secrets.txt
