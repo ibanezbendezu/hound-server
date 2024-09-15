@@ -1,16 +1,19 @@
 import { Identifiable } from "../util/identifiable.js";
 
 export interface ExtraInfo {
-    filename: string;
-    fullName: string;
-    id: string;
-    status: string;
-    submissionID: string;
-    nameEN: string;
-    nameNL: string;
-    exerciseID: string;
-    createdAt: Date;
-    labels: string;
+    filename?: string;
+    fullName?: string;
+    id?: string;
+    status?: string;
+    submissionID?: string;
+    nameEN?: string;
+    nameNL?: string;
+    exerciseID?: string;
+    createdAt?: Date;
+    sha?: string;
+    type?: string;
+    repository?: string;
+    owner?: string;
 }
 
 /**
@@ -23,7 +26,6 @@ export class File extends Identifiable {
     public readonly lineCount: number;
     public readonly lines: Array<string>;
     public readonly extra?: ExtraInfo;
-    public readonly sha?: string;
 
     public static compare(a: File, b: File): number {
         if (a.path < b.path) {
@@ -38,7 +40,6 @@ export class File extends Identifiable {
     constructor(
         public readonly path: string,
         content: string,
-        sha?: string,
         extra?: ExtraInfo,
         id?: number
     ) {
@@ -48,7 +49,6 @@ export class File extends Identifiable {
         this.lineCount = this.lines.length;
         this.extra = extra;
         this.path = path;
-        this.sha = sha;
     }
 
     get content(): string {

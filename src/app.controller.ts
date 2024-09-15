@@ -33,10 +33,9 @@ export class AppController {
         return this.appService.dolosTest();
     } */
 
-    /* @Get("/make")
-    async makeComparison() {
-        const comparison = await this.appService.makeComparison();
-        if (!comparison) throw new NotFoundException("Comparison not created");
+    @Get("/make")
+    async comparisonTest() {
+        const comparison = await this.appService.comparisonTestService();
         return comparison;
-    } */
+    }
 }

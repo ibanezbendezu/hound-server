@@ -78,17 +78,9 @@ export class GroupsController {
 
     @Post()
     async createGroup(@Body() body: { repos: any[], username: string }) {
-        const groupCreated = await this.groupsService.makeGroup(body.repos, body.username);
+        const groupCreated = await this.groupsService.createGroup(body.repos, body.username);
         if (!groupCreated) throw new NotFoundException("Group not created");
         return groupCreated;
-    }
-
-    @Put(":id")
-    async updateGroup(@Param("id") id: string, @Body() body: { repos: RepositoryDto[], username: string }) {
-        console.log("updateGroup in server", body);
-        const groupUpdated = await this.groupsService.updateGroup(Number(id), body.repos, body.username);
-        if (!groupUpdated) throw new NotFoundException("Group not updated");
-        return groupUpdated;
     }
 
     /**

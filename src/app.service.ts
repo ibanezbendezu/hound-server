@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
-//import { Dolos } from "./dolos";
-//import { GroupsService } from "./groups/groups.service";
+import { Dolos } from "./dolos";
+import { GroupsService } from "./groups/groups.service";
 
 @Injectable()
 export class AppService {
 
     constructor(
-        //private group: GroupsService
+        private group: GroupsService
     ) {
     }
 
@@ -114,19 +114,24 @@ export class AppService {
         }
     } */
 
-    /* async makeComparison() {
+    async comparisonTestService() {
         const username = "ibanezbendezu";
         const repos = [
-            { owner: "ibanezbendezu", name: "tingeso-ev1" },
-            { owner: "holYadio", name: "TingesoPEP1" },
-            { owner: "Issipisi", name: "Proyecto1_Tingeso" },
-            { owner: "ibanezbendezu", name: "tttest" },
+            /* { owner: "ibanezbendezu", name: "tttest" },
             { owner: "ibanezbendezu", name: "tttest2" },
-            { owner: "ibanezbendezu", name: "tttest3" },
+            { owner: "ibanezbendezu", name: "tttest3" }, */
+            { owner: "ibanezbendezu", name: "tingeso-mono-test" },
+            { owner: "ibanezbendezu", name: "tingeso-ev1" },
+            /* { owner: "holYadio", name: "TingesoPEP1" },
+            { owner: "HolYadio", name: "tingesoPEP2-AcopioService" },
+            { owner: "HolYadio", name: "tingesoPEP2-ProveedorService" },
+            { owner: "HolYadio", name: "tingesoPEP2-PlanillaPagosService" },
+            { owner: "HolYadio", name: "tingesoPEP2-LaboratorioService" },
+            { owner: "Issipisi", name: "Proyecto1_Tingeso" }, */
         ];
         
-        const results = await this.group.doGroup(repos, username);
+        const results = await this.group.createGroup(repos, username);
 
         return results;
-    } */
+    }
 }

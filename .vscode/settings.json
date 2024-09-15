@@ -1,2 +1,14 @@
 {
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "houndDB",
+            "database": "db",
+            "username": "postgres",
+            "password": "postgres"
+        }
+    ]
 }

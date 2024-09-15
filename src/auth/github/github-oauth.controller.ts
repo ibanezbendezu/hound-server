@@ -53,6 +53,8 @@ export class GithubOauthController {
         console.log(`\nURL: ${process.env.CLIENT_URL}`);
         console.log(`Domain: ${process.env.CLIENT_DOMAIN}\n`);
         
+        res.cookie("jwt", accessToken);
+        res.cookie("user", JSON.stringify(userWithToken));
         const key = `${JSON.stringify(userWithToken)}@@${accessToken}`;
         const escapedKey = encodeURIComponent(key);
         res.redirect(`${process.env.CLIENT_URL}/auth?tk=${escapedKey}`);

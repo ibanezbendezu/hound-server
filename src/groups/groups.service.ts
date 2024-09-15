@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { Group } from "@prisma/client";
 import { ComparisonsService } from "src/comparisons/comparisons.service";
-import { createHash } from 'crypto';
 import { compoundHash } from "src/shared";
 import { GithubService } from "src/github/github.service";
 
@@ -286,126 +285,6 @@ export class GroupsService {
     }
 
     /**
-     * Método que crea un group a partir de una lista de repositorios.
-     * @param repos
-     * @param username
-     * @returns Group data.
-     */
-    // ARREGLAR EL TIPO QUE DEVUELVE
-    async createGroup(repos: any[], username: string) {
-        console.log(repos);
-        console.log(username);
-
-        const repositories = await Promise.all(repos.map(async (repo) => {
-            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
-        }));
-
-        const concatenatedShas = repositories.map(repo => repo.sha).join('');
-        const currentTime = new Date().toISOString();
-        const groupSha = createHash('sha256').update(concatenatedShas + currentTime).digest('hex');
-
-        let group = await this.prisma.group.create({
-            data: {
-                sha: groupSha,
-                groupDate: new Date(),
-                numberOfRepos: repositories.length
-            }
-        });
-
-        for (let i = 0; i < repositories.length; i++) {
-            for (let j = i + 1; j < repositories.length; j++) {
-                let comparison = await this.comparisons.createComparation(repositories[i], repositories[j], group.id);
-                group = await this.prisma.group.update({
-                    where: { id: group.id },
-                    data: {
-                        comparisons: { connect: { id: comparison.id } }
-                    }
-                });
-
-                comparison = await this.prisma.comparison.update({
-                    where: { id: comparison.id },
-                    data: {
-                        groups: { connect: { id: group.id } }
-                    }
-                });
-            }
-        }
-
-        const newGroup = await this.prisma.group.findUnique({
-            where: { id: group.id },
-            include: {
-                comparisons: {
-                    include: {
-                        repositories: true,
-                    }
-                }
-            }
-        });
-
-        const rps = repositories.map(repo => {
-            return {
-                name: repo.name,
-                owner: repo.owner,
-            };
-        });
-
-        return { ...newGroup, repositories: rps };
-    }
-
-    async updateGroup(id: number, repos: any[], username: string) {
-        const repositories = await Promise.all(repos.map(async (repo) => {
-            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
-        }));
-
-        let group = await this.prisma.group.update({
-            where: { id: id },
-            data: {
-                groupDate: new Date(),
-                numberOfRepos: repositories.length
-            }
-        });
-
-        for (let i = 0; i < repositories.length; i++) {
-            for (let j = i + 1; j < repositories.length; j++) {
-                let comparison = await this.comparisons.createComparation(repositories[i], repositories[j], group.id);
-                group = await this.prisma.group.update({
-                    where: { id: group.id },
-                    data: {
-                        comparisons: { connect: { id: comparison.id } }
-                    }
-                });
-
-                comparison = await this.prisma.comparison.update({
-                    where: { id: comparison.id },
-                    data: {
-                        groups: { connect: { id: group.id } }
-                    }
-                });
-            }
-        }
-
-        const newGroup = await this.prisma.group.findUnique({
-            where: { id: group.id },
-            include: {
-                comparisons: {
-                    include: {
-                        repositories: true,
-                    }
-                }
-            }
-        });
-
-        const rps = repositories.map(repo => {
-            return {
-                name: repo.name,
-                owner: repo.owner,
-            };
-        });
-
-        return { ...newGroup, repositories: rps };
-    }
-
-    /**
      * Método que actualiza un group a partir de una lista de repositorios.
      * SHA es un hash único que identifica un group.
      * @param sha
@@ -422,7 +301,6 @@ export class GroupsService {
         console.log("ACTUALIZANDO GRUPO...\n");
         const newNumberOfRepos = repositories.filter(repo => repo.content.length > 0).length;
 
-
         let group = await this.prisma.group.update({
             where: { sha: sha },
             data: {
@@ -434,10 +312,8 @@ export class GroupsService {
         for (let i = 0; i < repositories.length; i++) {
             for (let j = i + 1; j < repositories.length; j++) {
                 if (repositories[i].content.length > 0 && repositories[j].content.length > 0) {
-                    let comparison = await this.comparisons.getComparisonBySha(repositories[i].sha, repositories[j].sha);
-                    if (!comparison) {
                         console.log(`\t> ${repositories[i].name} >=< ${repositories[j].name}`);
-                        comparison = await this.comparisons.makeComparison(repositories[i], repositories[j]);
+                        let comparison = await this.comparisons.makeComparison(repositories[i], repositories[j]);
                         if (comparison) {
                             console.log(`\tID comparación realizada: ${comparison.id}`);
 
@@ -455,7 +331,7 @@ export class GroupsService {
                                 }
                             });
                         }
-                    }
+                    
                 }
             }
         }
@@ -667,11 +543,11 @@ export class GroupsService {
         for (let i = 0; i < repositoryContents.length; i++) {
             for (let j = i + 1; j < repositoryContents.length; j++) {
                 if (repositoryContents[i].content.length > 0 && repositoryContents[j].content.length > 0) {
-                    console.log(`\t> ${repositoryContents[i].name} >=< ${repositoryContents[j].name}`);
+                    /* console.log(`\t> ${repositoryContents[i].name} >=< ${repositoryContents[j].name}`); */
                     
                     let comparison = await this.comparisons.makeComparison(repositoryContents[i], repositoryContents[j]);
                     if (comparison) {
-                        console.log(`\tID comparación realizada: ${comparison.id}`);
+                        /* console.log(`\tID comparación realizada: ${comparison.id}`); */
                         group = await this.prisma.group.update({
                             where: { id: group.id },
                             data: {
@@ -705,15 +581,21 @@ export class GroupsService {
         return { ...newGroup, repositories: repos };
     }
 
-    async doGroup(repos: any[], username: string) {
+    async createGroup(repos: any[], username: string) {
         console.log(repos);
         console.log(username);
+
+        console.log("\nREPOSITORIOS A COMPARAR: ", repos);
+        console.log("USUARIO QUE REALIZA LA COMPARACIÓN: ", username);
 
         const repositoryContents = await Promise.all(repos.map(async (repo) => {
             return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
 
-        console.log("Contenido de los repositorios obtenido");
+        console.log("Contenido de los repositorios obtenido\n");
+        console.log("NUMERO DE REPOSITORIOS: ", repositoryContents.length);
+        
+        console.log("CREANDO GRUPO...\n");
 
         const groupSha = compoundHash(repositoryContents, true);
         let group = await this.prisma.group.create({
@@ -724,26 +606,34 @@ export class GroupsService {
             }
         });
 
+        console.log("\n> COMPARANDO REPOSITORIOS...");
+        console.time("Tiempo en hacer todas las comparaciones");
         for (let i = 0; i < repositoryContents.length; i++) {
             for (let j = i + 1; j < repositoryContents.length; j++) {
-                console.log(`\nComparando ${repositoryContents[i].name} con ${repositoryContents[j].name}`);
-                let comparison = await this.comparisons.makeComparison(repositoryContents[i], repositoryContents[j]);
-                console.log(`Comparación realizada: ${comparison.id}`);
-                group = await this.prisma.group.update({
-                    where: { id: group.id },
-                    data: {
-                        comparisons: { connect: { id: comparison.id } }
-                    }
-                });
-
-                comparison = await this.prisma.comparison.update({
-                    where: { id: comparison.id },
-                    data: {
-                        groups: { connect: { id: group.id } }
-                    }
-                });
+                console.log(`\n>>COMPARANDO ${repositoryContents[i].name} CON ${repositoryContents[j].name}`);
+                let comparison = await this.comparisons.createComparison(repositoryContents[i], repositoryContents[j]);
+                if (comparison) {
+                    /* console.log(`\tID comparación realizada: ${comparison.id}`); */
+                    group = await this.prisma.group.update({
+                        where: { id: group.id },
+                        data: {
+                            comparisons: { connect: { id: comparison.id } }
+                        }
+                    });
+        
+                    comparison = await this.prisma.comparison.update({
+                        where: { id: comparison.id },
+                        data: {
+                            groups: { connect: { id: group.id } }
+                        }
+                    });
+                }
             }
         }
+        console.log("\n");
+        console.timeEnd("Tiempo en hacer todas las comparaciones");
+        console.log("COMPARACIONES REALIZADAS\n");
+        console.log("------------------------------------\n\n");
 
         return group;
     }
