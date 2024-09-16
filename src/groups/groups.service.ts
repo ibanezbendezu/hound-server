@@ -589,7 +589,6 @@ export class GroupsService {
         console.log("NUMERO DE REPOSITORIOS: ", repositoryContents.length);
         
         console.log("CREANDO GRUPO...\n");
-
         const groupSha = compoundHash(repositoryContents, true);
         let group = await this.prisma.group.create({
             data: {
