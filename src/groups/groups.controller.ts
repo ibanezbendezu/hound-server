@@ -92,7 +92,6 @@ export class GroupsController {
      */
     @Put("/sha/:sha")
     async updateGroupBySha(@Param("sha") sha: string, @Body() body: { repos: RepositoryDto[], username: string }) {
-        console.log("updateGroupBySha in server", body);
         const groupUpdated = await this.groupsService.updateGroupBySha(sha, body.repos, body.username);
         if (!groupUpdated) throw new NotFoundException("Group not updated");
         return groupUpdated;
