@@ -9,6 +9,21 @@
             "database": "db",
             "username": "postgres",
             "password": "postgres"
+        },
+        {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": true
+                }
+            },
+            "previewLimit": 50,
+            "server": "dbhound.postgres.database.azure.com",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "hdb",
+            "database": "postgres",
+            "username": "agron",
+            "password": "P4ssword"
         }
     ]
 }

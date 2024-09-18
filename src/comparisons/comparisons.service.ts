@@ -292,12 +292,12 @@ export class ComparisonsService {
 
             //TRANSFORMACIÓN DE STRINGS A ARCHIVOS
             console.log(`TRANSFORMANDO ARCHIVOS DE LOS REPOSITORIOS ${leftRepository.name} y ${rightRepository.name}`);
-            console.time("Tiempo de obtención de repositorios");
+            console.time("Tiempo de transformación de archivos");
             const [leftRepoFiles, rightRepoFiles] = await Promise.all([
                 dolos.stringsToFiles(leftRepository.content, leftRepository.owner, leftRepository.name),
                 dolos.stringsToFiles(rightRepository.content, rightRepository.owner, rightRepository.name)
             ]);
-            console.timeEnd("Tiempo de obtención de repositorios");
+            console.timeEnd("Tiempo de transformación de archivos");
 
             //COMPARACIÓN DE ARCHIVOS
             console.log("COMPARANDO ARCHIVOS");
