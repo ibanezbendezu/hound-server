@@ -254,9 +254,11 @@ export class GroupsService {
         result.repositories.forEach(repo => {
             repo.children.forEach(folder => {
                 folder.children.forEach(file => {
+                    const top = [...file.links].sort((a, b) => b.similarity - a.similarity)[0];
                     const totalSimilarity = file.links.reduce((acc, link) => acc + link.similarity, 0);
                     const averageFever = file.links.length > 0 ? totalSimilarity / file.links.length : 0;
                     file.fever = averageFever;
+                    file.top = {pairId: top.pairId, pairFilePath: top.pairFilePath, similarity: top.similarity, repositoryName: top.pairFileRepositoryName };
                 });
                 const totalFiles = folder.children.length;
                 const totalLines = folder.children.reduce((acc, file) => acc + file.lines, 0);
@@ -265,6 +267,7 @@ export class GroupsService {
                 folder.numberOfFiles = totalFiles;
                 folder.folderLines = totalLines;
                 folder.fever = averageFolderFever;
+                folder.standardDeviation = this.std(folder.children.map(file => file.fever));
             });
             const totalFiles = repo.children.reduce((acc, folder) => acc + folder.numberOfFiles, 0);
             const totalFolders = repo.children.length;
@@ -330,6 +333,9 @@ export class GroupsService {
     */
     // ARREGLAR EL TIPO QUE DEVUELVE
     async updateGroupBySha(sha: string, repos: any[], username: string) {
+        console.log(repos);
+        console.log(username);
+
         const repositories = await Promise.all(repos.map(async (repo) => {
             return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
         }));
@@ -373,18 +379,7 @@ export class GroupsService {
         console.log("COMPARACIONES REALIZADAS\n");
         console.log("------------------------------------\n\n");
 
-        const newGroup = await this.prisma.group.findUnique({
-            where: { id: group.id },
-            include: {
-                comparisons: {
-                    include: {
-                        repositories: true,
-                    }
-                }
-            }
-        });
-
-        return { ...newGroup, repositories: repos };
+        return group;
     }
 
     async getFilesByGroupId(groupId: number) {
@@ -539,93 +534,7 @@ export class GroupsService {
         return pairs;
     }
 
-    async doComparisson(repositoryContents: any[], group: any) {
-        console.log("COMPARANDO REPOSITORIOS...");
-        for (let i = 0; i < repositoryContents.length; i++) {
-            for (let j = i + 1; j < repositoryContents.length; j++) {
-                if (repositoryContents[i].content.length > 0 && repositoryContents[j].content.length > 0) {
-                    /* console.log(`\t> ${repositoryContents[i].name} >=< ${repositoryContents[j].name}`); */
-                    
-                    let comparison = await this.comparisons.makeComparison(repositoryContents[i], repositoryContents[j]);
-                    if (comparison) {
-                        /* console.log(`\tID comparación realizada: ${comparison.id}`); */
-                        group = await this.prisma.group.update({
-                            where: { id: group.id },
-                            data: {
-                                comparisons: { connect: { id: comparison.id } }
-                            }
-                        });
-            
-                        comparison = await this.prisma.comparison.update({
-                            where: { id: comparison.id },
-                            data: {
-                                groups: { connect: { id: group.id } }
-                            }
-                        });
-                    }
-                }
-            }
-        }
-        console.log("|\n");
-    }
-
-    /**
-     * Método que crea un group a partir de una lista de repositorios.
-     * @param repos
-     * @param username
-     * @returns Group data.
-     */
-    // ARREGLAR EL TIPO QUE DEVUELVE
-    async makeGroup(repos: any[], username: string) {
-        console.log("\nREPOSITORIOS A COMPARAR: ", repos);
-        console.log("USUARIO QUE REALIZA LA COMPARACIÓN: ", username);
-
-        const repositoryContents = await Promise.all(repos.map(async (repo) => {
-            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
-        }));
-
-        console.log("Contenido de los repositorios obtenido\n");
-        console.log("NUMERO DE REPOSITORIOS: ", repositoryContents.length);
-        
-        console.log("CREANDO GRUPO...\n");
-
-        const groupSha = compoundHash(repositoryContents, true);
-        let group = await this.prisma.group.create({
-            data: {
-                sha: groupSha,
-                groupDate: new Date(),
-                numberOfRepos: repos.length
-            }
-        });
-
-        this.doComparisson(repositoryContents, group);
-        return group;
-    }
-
-    async createGroup(repos: any[], username: string) {
-        console.log(repos);
-        console.log(username);
-
-        console.log("\nREPOSITORIOS A COMPARAR: ", repos);
-        console.log("USUARIO QUE REALIZA LA COMPARACIÓN: ", username);
-
-        const repositoryContents = await Promise.all(repos.map(async (repo) => {
-            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
-        }));
-
-        console.log("Contenido de los repositorios obtenido\n");
-        console.log("NUMERO DE REPOSITORIOS: ", repositoryContents.length);
-        
-        console.log("CREANDO GRUPO...\n");
-        const groupSha = compoundHash(repositoryContents, true);
-        let group = await this.prisma.group.create({
-            data: {
-                sha: groupSha,
-                groupDate: new Date(),
-                numberOfRepos: repos.length
-            }
-        });
-
+    async doComparison(repositoryContents: any[], group: any) {
         console.log("\n> COMPARANDO REPOSITORIOS...");
         console.time("Tiempo en hacer todas las comparaciones");
         for (let i = 0; i < repositoryContents.length; i++) {
@@ -653,18 +562,44 @@ export class GroupsService {
         console.timeEnd("Tiempo en hacer todas las comparaciones");
         console.log("COMPARACIONES REALIZADAS\n");
         console.log("------------------------------------\n\n");
+    }
 
-        const newGroup = await this.prisma.group.findUnique({
-            where: { id: group.id },
-            include: {
-                comparisons: {
-                    include: {
-                        repositories: true,
-                    }
-                }
+    async createGroup(repos: any[], username: string) {
+        console.log(repos);
+        console.log(username);
+
+        console.log("\nREPOSITORIOS A COMPARAR: ", repos);
+        console.log("USUARIO QUE REALIZA LA COMPARACIÓN: ", username);
+
+        const repositoryContents = await Promise.all(repos.map(async (repo) => {
+            return await this.github.getFilteredRepositoryContent(repo.owner, repo.name, username);
+        }));
+
+        console.log("Contenido de los repositorios obtenido\n");
+        console.log("NUMERO DE REPOSITORIOS: ", repositoryContents.length);
+        
+        console.log("CREANDO GRUPO...\n");
+        const groupSha = compoundHash(repositoryContents, true);
+        let group = await this.prisma.group.create({
+            data: {
+                sha: groupSha,
+                groupDate: new Date(),
+                numberOfRepos: repos.length
             }
         });
 
-        return { ...newGroup, repositories: repos };
+        this.doComparison(repositoryContents, group);
+
+        return group;
+    }
+
+    sum(list:number[]) {
+        return list.reduce((partialSum, a) => partialSum + a, 0);
+    }
+
+    std(arr: number[]) {
+        const mean = this.sum(arr) / arr.length;
+        const variance = this.sum(arr.map(v => (v - mean) ** 2));
+        return Math.sqrt(variance);
     }
 }
