@@ -284,6 +284,42 @@ export class GroupsService {
         return result;
     }
 
+
+    /**
+     * Método que obtiene un group por su SHA.
+     * SHA es un hash único que identifica un group.
+     * @param sha
+     * @returns Group data.
+     */
+    // ARREGLAR EL TIPO QUE DEVUELVE
+    async getGroupSummaryBySha(sha: string): Promise<any> {
+        const groupFind = this.prisma.group.findUnique({
+            where: {
+                sha: sha
+            },
+            include: {
+                comparisons: {
+                    select: {
+                        id: true
+                    }
+                }
+            }
+        });
+
+        const cf = await groupFind;
+        const comparisons = cf.comparisons;
+
+        const result = {
+            id: cf.id,
+            sha: cf.sha,
+            date: cf.groupDate,
+            numberOfRepos: cf.numberOfRepos,
+            comparissonsCompleted: comparisons.length,
+        };
+
+        return result;
+    }
+
     /**
      * Método que actualiza un group a partir de una lista de repositorios.
      * SHA es un hash único que identifica un group.
@@ -503,6 +539,36 @@ export class GroupsService {
         return pairs;
     }
 
+    async doComparisson(repositoryContents: any[], group: any) {
+        console.log("COMPARANDO REPOSITORIOS...");
+        for (let i = 0; i < repositoryContents.length; i++) {
+            for (let j = i + 1; j < repositoryContents.length; j++) {
+                if (repositoryContents[i].content.length > 0 && repositoryContents[j].content.length > 0) {
+                    /* console.log(`\t> ${repositoryContents[i].name} >=< ${repositoryContents[j].name}`); */
+                    
+                    let comparison = await this.comparisons.makeComparison(repositoryContents[i], repositoryContents[j]);
+                    if (comparison) {
+                        /* console.log(`\tID comparación realizada: ${comparison.id}`); */
+                        group = await this.prisma.group.update({
+                            where: { id: group.id },
+                            data: {
+                                comparisons: { connect: { id: comparison.id } }
+                            }
+                        });
+            
+                        comparison = await this.prisma.comparison.update({
+                            where: { id: comparison.id },
+                            data: {
+                                groups: { connect: { id: group.id } }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        console.log("|\n");
+    }
+
     /**
      * Método que crea un group a partir de una lista de repositorios.
      * @param repos
@@ -532,46 +598,8 @@ export class GroupsService {
             }
         });
 
-        console.log("COMPARANDO REPOSITORIOS...");
-        for (let i = 0; i < repositoryContents.length; i++) {
-            for (let j = i + 1; j < repositoryContents.length; j++) {
-                if (repositoryContents[i].content.length > 0 && repositoryContents[j].content.length > 0) {
-                    /* console.log(`\t> ${repositoryContents[i].name} >=< ${repositoryContents[j].name}`); */
-                    
-                    let comparison = await this.comparisons.makeComparison(repositoryContents[i], repositoryContents[j]);
-                    if (comparison) {
-                        /* console.log(`\tID comparación realizada: ${comparison.id}`); */
-                        group = await this.prisma.group.update({
-                            where: { id: group.id },
-                            data: {
-                                comparisons: { connect: { id: comparison.id } }
-                            }
-                        });
-            
-                        comparison = await this.prisma.comparison.update({
-                            where: { id: comparison.id },
-                            data: {
-                                groups: { connect: { id: group.id } }
-                            }
-                        });
-                    }
-                }
-            }
-        }
-        console.log("|\n");
-
-        const newGroup = await this.prisma.group.findUnique({
-            where: { id: group.id },
-            include: {
-                comparisons: {
-                    include: {
-                        repositories: true,
-                    }
-                }
-            }
-        });
-
-        return { ...newGroup, repositories: repos };
+        this.doComparisson(repositoryContents, group);
+        return group;
     }
 
     async createGroup(repos: any[], username: string) {

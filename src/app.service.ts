@@ -127,6 +127,11 @@ export class AppService {
             { owner: "HolYadio", name: "tingesoPEP2-ProveedorService" },
             { owner: "HolYadio", name: "tingesoPEP2-PlanillaPagosService" },
             { owner: "HolYadio", name: "tingesoPEP2-LaboratorioService" },
+            { owner: "paburto", name: "Tingeso" },
+            { owner: "Vanina11", name: "mueblesstgo" },
+            { owner: "acientgear", name: "tingeso" },
+            { owner: "CatalinaOlivares", name: "Tingeso1" },
+             
             { owner: "Issipisi", name: "Proyecto1_Tingeso" }, */
         ];
         

@@ -36,6 +36,19 @@ export class GroupsController {
         return groupFound;
     }
 
+    /**
+     * Endpoint que obtiene un group por su SHA.
+     * SHA es un hash único que identifica un group.
+     * @param sha
+     * @returns Group.
+    */
+    @Get("/summary/:sha")
+    async getGroupSummaryBySha(@Param("sha") sha: string) {
+        const groupFound = await this.groupsService.getGroupSummaryBySha(sha);
+        if (!groupFound) throw new NotFoundException("Group not found");
+        return groupFound;
+    }
+
     @Get(":id/files")
     async getFilesByGroupId(@Param("id") id: string) {
         const files = await this.groupsService.getFilesByGroupId(Number(id));
