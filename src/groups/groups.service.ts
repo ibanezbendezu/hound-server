@@ -610,7 +610,6 @@ export class GroupsService {
 
         console.log("Contenido de los repositorios obtenido\n");
         console.log("NUMERO DE REPOSITORIOS: ", repositoryContents.length);
-        console.log("sha de los repositorios: ", repositoryContents.map(repo => repo.sha));
         
         console.log("CREANDO GRUPO...\n");
         const groupSha = compoundHash(repositoryContents, true);
@@ -621,7 +620,6 @@ export class GroupsService {
                 numberOfRepos: repos.length
             }
         });
-        console.log("sha compuesto del grupo: ", groupSha);
 
         this.doComparison(repositoryContents, group);
 
