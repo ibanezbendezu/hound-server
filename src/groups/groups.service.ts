@@ -258,6 +258,8 @@ export class GroupsService {
         result.repositories.forEach(repo => {
             repo.children.forEach(folder => {
                 folder.children.forEach(file => {
+                    const maxOverlap = Math.max(...file.links.map(link => link.totalOverlap));
+                    file.links.forEach(link => link.normalizedImpact = link.totalOverlap / maxOverlap);
                     const top = [...file.links].sort((a, b) => b.similarity - a.similarity)[0];
                     const totalSimilarity = file.links.reduce((acc, link) => acc + link.similarity, 0);
                     const averageFever = file.links.length > 0 ? totalSimilarity / file.links.length : 0;

@@ -160,6 +160,8 @@ export class PairsService {
             select: {
                 id: true,
                 similarity: true,
+                totalOverlap: true,
+                longestFragment: true,
                 leftFileSha: true,
                 rightFileSha: true,
                 files: {
@@ -185,6 +187,8 @@ export class PairsService {
                 }
             },
         });
+
+        const maxOverlap = Math.max(...pairsFound.map(link => link.totalOverlap));
         
         const pairsWithContent = await Promise.all(pairsFound.map(async (pair) => {
             if (pair.leftFileSha !== fileFound.sha) {
@@ -202,6 +206,9 @@ export class PairsService {
             return {
                 id: pair.id,
                 similarity: pair.similarity,
+                totalOverlap: pair.totalOverlap,
+                longestFragment: pair.longestFragment,
+                normalizedImpact: pair.totalOverlap / maxOverlap,
                 sideFragments: fragments.map(fragment => { return { start: fragment.leftstartRow, end: fragment.leftendRow } } ),
                 file: {
                     ...file,
