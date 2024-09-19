@@ -18,7 +18,7 @@ export class AppService {
         return "Este es un recurso protegido";
     }
 
-    /* async dolosTest() {
+    async dolosTest() {
         const files = [
             {"path": "src/main/java/controllers/ClockController.java",
                 "content": `package cl.tingeso.mueblesstgo.controllers;
@@ -100,6 +100,7 @@ export class AppService {
             console.log(`Pair: ${pair.leftFile.path} vs ${pair.rightFile.path}`);
             console.log("similarity: " + pair.similarity);
             console.log("longest fragment: " + pair.longest);
+            console.log("total overlap: " + pair.overlap);
             console.log("number of fragments: " + pair.buildFragments().length);
             console.log("--------------------------------------------------");
             let index = 0;
@@ -112,7 +113,7 @@ export class AppService {
             }
             console.log("--------------------------------------------------");
         }
-    } */
+    }
 
     async comparisonTestService() {
         const username = "ibanezbendezu";

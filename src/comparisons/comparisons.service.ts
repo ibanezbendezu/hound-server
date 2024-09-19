@@ -347,6 +347,8 @@ export class ComparisonsService {
                     this.prisma.pair.create({
                         data: {
                             similarity: pair.similarity,
+                            totalOverlap: pair.overlap,
+                            longestFragment: pair.longest,
                             leftFileSha: pair.leftFile.extra.sha,
                             leftFilepath: pair.leftFile.path,
                             charCountLeft: pair.leftFile.charCount,

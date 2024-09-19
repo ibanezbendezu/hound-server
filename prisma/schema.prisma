@@ -71,6 +71,8 @@ model File {
 model Pair {
   id              Int      @id @default(autoincrement())
   similarity      Float
+  totalOverlap    Int?
+  longestFragment Int?
 
   leftFilepath     String
   leftFileSha      String

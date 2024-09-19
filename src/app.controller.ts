@@ -28,10 +28,10 @@ export class AppController {
         return req.user;
     }
 
-    /* @Get("dolos")
+    @Get("dolos")
     dolos() {
         return this.appService.dolosTest();
-    } */
+    }
 
     @Get("/make")
     async comparisonTest() {

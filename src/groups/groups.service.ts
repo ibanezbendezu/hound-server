@@ -89,6 +89,8 @@ export class GroupsService {
                             select: {
                                 id: true,
                                 similarity: true,
+                                totalOverlap: true,
+                                longestFragment: true,
                                 leftFilepath: true,
                                 lineCountLeft: true,
                                 rightFilepath: true,
@@ -178,6 +180,8 @@ export class GroupsService {
 
                     const link = {
                         similarity: pair.similarity,
+                        totalOverlap: pair.totalOverlap,
+                        longestFragment: pair.longestFragment,
                         pairFileId: pair.leftFilepath !== filepath ? leftFile.id : rightFile.id,
                         pairFileSha: pair.leftFilepath !== filepath ? leftFile.sha : rightFile.sha,
                         pairFileSide: pair.leftFilepath !== filepath ? "left" : "right",
