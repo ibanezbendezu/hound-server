@@ -30,6 +30,36 @@ export class GroupsService {
         });
     }
 
+    async getGroupSummaryById(id: number): Promise<any> {
+        const groupFind = this.prisma.group.findUnique({
+            where: {
+                id: id
+            },
+            select: {
+                id: true,
+                sha: true,
+                comparisons: {
+                    select: {
+                        id: true,
+                        sha: true,
+                        repositories: {
+                            select: {
+                                id: true, name: true, owner: true, sha: true }
+                        },
+                        pairs: {
+                            select: { id: true, similarity: true, totalOverlap: true, longestFragment: true,
+                                files: {
+                                    select: { id: true, filepath: true, sha: true }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        return groupFind;
+    }
+
     async getGroupById(id: number): Promise<Group> {
         const groupFind = this.prisma.group.findUnique({
             where: {
@@ -571,9 +601,6 @@ export class GroupsService {
     }
 
     async createGroup(repos: any[], username: string) {
-        console.log(repos);
-        console.log(username);
-
         console.log("\nREPOSITORIOS A COMPARAR: ", repos);
         console.log("USUARIO QUE REALIZA LA COMPARACIÓN: ", username);
 
@@ -583,6 +610,7 @@ export class GroupsService {
 
         console.log("Contenido de los repositorios obtenido\n");
         console.log("NUMERO DE REPOSITORIOS: ", repositoryContents.length);
+        console.log("sha de los repositorios: ", repositoryContents.map(repo => repo.sha));
         
         console.log("CREANDO GRUPO...\n");
         const groupSha = compoundHash(repositoryContents, true);
@@ -593,6 +621,7 @@ export class GroupsService {
                 numberOfRepos: repos.length
             }
         });
+        console.log("sha compuesto del grupo: ", groupSha);
 
         this.doComparison(repositoryContents, group);
 

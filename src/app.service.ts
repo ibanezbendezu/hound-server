@@ -122,7 +122,7 @@ export class AppService {
             { owner: "ibanezbendezu", name: "tttest2" },
             { owner: "ibanezbendezu", name: "tttest3" }, */
             { owner: "ibanezbendezu", name: "tingeso-mono-test" },
-            { owner: "ibanezbendezu", name: "tingeso-ev1" },
+            { owner: "ibanezbendezu", name: "tingeso-ev1-g" },
             /* { owner: "holYadio", name: "TingesoPEP1" },
             { owner: "HolYadio", name: "tingesoPEP2-AcopioService" },
             { owner: "HolYadio", name: "tingesoPEP2-ProveedorService" },

@@ -287,6 +287,7 @@ export class ComparisonsService {
             const comparisonSha = createHash("sha256").update(sha).digest("hex");
             const comparisonFound = await this.prisma.comparison.findUnique({ where: { sha: comparisonSha } });
             if (comparisonFound) {
+                console.log(`COMPARACIÓN DE ${leftRepository.name} Y ${rightRepository.name} YA EXISTE`);
                 return comparisonFound;
             }
 
@@ -369,7 +370,7 @@ export class ComparisonsService {
                                             lineCount: pair.leftFile.lineCount,
                                             language: this.getFileLanguage(pair.leftFile.path),
                                             type: this.identifyFileType(pair.leftFile.content),
-                                            repository: { connect: { id: Number(repositoryA.id) } }
+                                            repository: { connect: { id: repositoryA.id } }
                                         }
                                     },
                                     {
@@ -381,7 +382,7 @@ export class ComparisonsService {
                                             lineCount: pair.rightFile.lineCount,
                                             language: this.getFileLanguage(pair.rightFile.path),
                                             type: this.identifyFileType(pair.rightFile.content),
-                                            repository: { connect: { id: Number(repositoryB.id) } }
+                                            repository: { connect: { id: repositoryB.id } }
                                         }
                                     }
                                 ]

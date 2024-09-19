@@ -109,4 +109,11 @@ export class GroupsController {
         if (!groupUpdated) throw new NotFoundException("Group not updated");
         return groupUpdated;
     }
+
+    @Get(":id/summary")
+    async getGroupSummary(@Param("id") id: string) {
+        const groupSummary = await this.groupsService.getGroupSummaryById(Number(id));
+        if (!groupSummary) throw new NotFoundException("Group summary not found");
+        return groupSummary;
+    }
 }
