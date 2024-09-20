@@ -391,21 +391,18 @@ export class GroupsService {
         for (let i = 0; i < repositories.length; i++) {
             for (let j = i + 1; j < repositories.length; j++) {
                 if (repositories[i].content.length > 0 && repositories[j].content.length > 0) {
-                    let comparison = await this.comparisons.getComparisonBySha(repositories[i].sha, repositories[j].sha);
-                    if (!comparison) {
-                        console.log(`\n>>COMPARANDO ${repositories[i].name} CON ${repositories[j].name}`);
-                        comparison = await this.comparisons.createComparison(repositories[i], repositories[j]);
-                        if (comparison) {
-                            group = await this.prisma.group.update({
-                                where: { id: group.id },
-                                data: { comparisons: { connect: { id: comparison.id } } }
-                            });
+                    console.log(`\n>>COMPARANDO ${repositories[i].name} CON ${repositories[j].name}`);
+                    let comparison = await this.comparisons.createComparison(repositories[i], repositories[j]);
+                    if (comparison) {
+                        group = await this.prisma.group.update({
+                            where: { id: group.id },
+                            data: { comparisons: { connect: { id: comparison.id } } }
+                        });
 
-                            comparison = await this.prisma.comparison.update({
-                                where: { id: comparison.id },
-                                data: { groups: { connect: { id: group.id } } }
-                            });
-                        }
+                        comparison = await this.prisma.comparison.update({
+                            where: { id: comparison.id },
+                            data: { groups: { connect: { id: group.id } } }
+                        });
                     }
                 }
             }
@@ -580,16 +577,12 @@ export class GroupsService {
                 if (comparison) {
                     group = await this.prisma.group.update({
                         where: { id: group.id },
-                        data: {
-                            comparisons: { connect: { id: comparison.id } }
-                        }
+                        data: { comparisons: { connect: { id: comparison.id } } }
                     });
         
                     comparison = await this.prisma.comparison.update({
                         where: { id: comparison.id },
-                        data: {
-                            groups: { connect: { id: group.id } }
-                        }
+                        data: { groups: { connect: { id: group.id } } }
                     });
                 }
             }
