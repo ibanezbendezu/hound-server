@@ -230,6 +230,7 @@ export class PairsService {
         const finalData = {
             file: {
                 ...fileFound,
+                averageSimilarity: pairsWithContent.reduce((acc, pair) => acc + pair.similarity, 0) / pairsWithContent.length,
                 fragments: [{ start: 0, end: 0 }],
             },
             repositories: pairsByRightRepository,
