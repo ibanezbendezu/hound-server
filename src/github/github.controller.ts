@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, NotFoundException, Param, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, NotFoundException, Param, Post, Res } from '@nestjs/common';
 import { JwtAuthService } from 'src/auth/jwt/jwt-auth.service';
 import { GithubService } from './github.service';
 
@@ -67,6 +67,24 @@ export class GithubController {
             const fileFound = await this.githubService.getFileContentBySha(sha, username);
             if (!fileFound) throw new NotFoundException("File not found");
             return fileFound;
+        } catch (error) {
+            throw new NotFoundException("Token inválido o expirado");
+        }
+    }
+
+    @Post("repositories/search")
+    async getRepositoriesSearch(
+        @Headers('authorization') authorizationHeader: string,
+        @Body() body: { repos: string, username: string }
+    ){
+        try {
+            const token = authorizationHeader.split(' ')[1];
+            const decoded = this.jwt.verifyToken(token);
+            const username = decoded.username;
+
+            const repositories = await this.githubService.getRepositoriesSearch(body.repos, username);
+            if (!repositories) throw new NotFoundException("Repositories not found");
+            return repositories;
         } catch (error) {
             throw new NotFoundException("Token inválido o expirado");
         }

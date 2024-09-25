@@ -5,6 +5,7 @@ import { UsersService } from 'src/users/users.service';
 import { LRUCache } from "lru-cache";
 import { identifyFileType } from '../shared/utils/util';
 import { languagePicker } from '../shared/utils/util';
+import fetch from 'node-fetch';
 
 @Injectable()
 export class GithubService {
@@ -332,5 +333,45 @@ export class GithubService {
         }
 
         return "Unknown";
+    }
+
+    async getRepositoriesSearch(repositories: string, username: string): Promise<any[]> {
+        const user_token = await this.user.getUserToken(username);
+        const token = user_token || process.env.GH_TOKEN;
+        this.octokit = new Octokit({ auth: token });
+
+        const urls = repositories.includes('\n') ? repositories.split('\n').filter(url => url.trim() !== '') : [repositories];
+        const uniqueUrls = Array.from(new Set(urls));
+
+        const repos = uniqueUrls.map(url => {
+            const parts = url.split('/');
+            const owner = parts[3];
+            const name = parts[4];
+            return { owner, name };
+        });
+
+        console.log("REPOSITORIOS: ", repos);
+
+        const results = [];
+        for (const repo of repos) {
+            try {
+                const response = await this.octokit.repos.get({
+                    owner: repo.owner,
+                    repo: repo.name,
+                });
+
+                if (response.status === 200) {
+                    console.log(`\n${repo.owner}/${repo.name} -> Lenguaje: ${response.data.language}`);
+
+                    if(response.data.language === "Java" && this.identifySpringBootProject(repo.owner, repo.name)) {
+                        results.push(response.data);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error fetching repository ${repo.owner}/${repo.name}:`, error);
+            }
+        }
+
+        return results;
     }
 }
