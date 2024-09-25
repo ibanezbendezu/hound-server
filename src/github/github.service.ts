@@ -363,8 +363,11 @@ export class GithubService {
                 if (response.status === 200) {
                     console.log(`\n${repo.owner}/${repo.name} -> Lenguaje: ${response.data.language}`);
 
-                    if(response.data.language === "Java" && this.identifySpringBootProject(repo.owner, repo.name)) {
-                        results.push(response.data);
+                    if (response.data.language === "Java") {
+                        const isSpringBootProject = await this.identifySpringBootProject(repo.owner, repo.name);
+                        if (isSpringBootProject) {
+                            results.push(response.data);
+                        }
                     }
                 }
             } catch (error) {
