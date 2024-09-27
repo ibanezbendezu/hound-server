@@ -37,11 +37,11 @@ export class GroupsController {
     }
 
     /**
-     * Endpoint que obtiene un group por su SHA.
+     * Endpoint que obtiene un resumen de un group por su SHA.
      * SHA es un hash único que identifica un group.
      * @param sha
-     * @returns Group.
-    */
+     * @returns Resumen del group.
+     * */
     @Get("/summary/:sha")
     async getGroupSummaryBySha(@Param("sha") sha: string) {
         const groupFound = await this.groupsService.getGroupSummaryBySha(sha);
@@ -110,9 +110,16 @@ export class GroupsController {
         return groupUpdated;
     }
 
-    @Get(":id/summary")
-    async getGroupSummary(@Param("id") id: string) {
-        const groupSummary = await this.groupsService.getGroupSummaryById(Number(id));
+    @Get("/report/:sha")
+    async getGroupReportBySha(@Param("sha") sha: string) {
+        const groupSummary = await this.groupsService.getGroupReportBySha(sha);
+        if (!groupSummary) throw new NotFoundException("Group summary not found");
+        return groupSummary;
+    }
+
+    @Get("/overall/:sha")
+    async getGroupOverallBySha(@Param("sha") sha: string) {
+        const groupSummary = await this.groupsService.getGroupOverallBySha(sha);
         if (!groupSummary) throw new NotFoundException("Group summary not found");
         return groupSummary;
     }

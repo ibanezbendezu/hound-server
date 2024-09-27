@@ -30,34 +30,295 @@ export class GroupsService {
         });
     }
 
-    async getGroupSummaryById(id: number): Promise<any> {
-        const groupFind = this.prisma.group.findUnique({
+    async groupPrismaQueryBySha(sha: string) {
+        return this.prisma.group.findUnique({
             where: {
-                id: id
+                sha: sha
             },
-            select: {
-                id: true,
-                sha: true,
+            include: {
                 comparisons: {
                     select: {
                         id: true,
                         sha: true,
+                        comparisonDate: true,
                         repositories: {
                             select: {
-                                id: true, name: true, owner: true, sha: true }
-                        },
-                        pairs: {
-                            select: { id: true, similarity: true, totalOverlap: true, longestFragment: true,
+                                id: true,
+                                name: true,
+                                owner: true,
+                                sha: true,
+                                totalLines: true,
                                 files: {
-                                    select: { id: true, filepath: true, sha: true }
+                                    select: {
+                                        id: true,
+                                        filepath: true,
+                                        sha: true,
+                                        lineCount: true,
+                                        type: true,
+                                        pairs: {
+                                            where: {
+                                                comparison: {
+                                                    groups: {
+                                                        some: {
+                                                            sha: sha
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                            select: {
+                                                id: true,
+                                                similarity: true,
+                                                totalOverlap: true,
+                                                longestFragment: true,
+                                                leftFilepath: true,
+                                                rightFilepath: true,
+                                                leftFileSha: true,
+                                                rightFileSha: true,
+                                                files: {
+                                                    select: {
+                                                        sha: true,
+                                                        repository: {
+                                                            select: {
+                                                                id: true,
+                                                                name: true,
+                                                                owner: true,
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        }
+                        },
                     }
                 }
             }
         });
-        return groupFind;
+    }
+
+    async getGroupOverallBySha(sha: string): Promise<any> {
+        const groupFind = this.groupPrismaQueryBySha(sha);
+        if (!groupFind) throw new Error("Group not found");
+        const group = await groupFind;
+
+        const repositories = Array.from(
+            new Map(
+                group.comparisons.flatMap(comparison => comparison.repositories)
+                    .map(repo => {
+                        const { id, name, owner, sha, files } = repo;
+                        const repositoryLines = files.reduce((acc, file) => acc + file.lineCount, 0);
+                        const numberOfFiles = files.length;
+        
+                        return [id, { id, name, owner, sha, repositoryLines, numberOfFiles }];
+                    })
+            ).values()
+        );
+
+        const pairs = Array.from(
+            new Set(
+                group.comparisons.flatMap(comparison => comparison.repositories)
+                    .flatMap(repo => repo.files)
+                    .flatMap(file => file.pairs)
+            )
+        );
+
+        const result = {
+            id: group.id,
+            sha: group.sha,
+            date: group.groupDate,
+            numberOfRepos: group.numberOfRepos,
+            numberOfFiles: repositories.reduce((acc, repo) => acc + repo.numberOfFiles, 0),
+            groupLines: repositories.reduce((acc, repo) => acc + repo.repositoryLines, 0),
+            pairs: pairs,
+        };
+
+        return result;
+    }
+
+    async getGroupReportBySha(sha: string): Promise<any> {
+        const groupFind = this.groupPrismaQueryBySha(sha);
+        if (!groupFind) throw new Error("Group not found");
+        const group = await groupFind;
+
+        const repositories = Array.from(
+            new Map(
+                group.comparisons.flatMap(comparison => comparison.repositories)
+                    .map(repo => {
+                        const { id, name, owner, sha, files } = repo;
+                        const classMap = {};
+                        files.forEach(file => {
+                            const type = file.type;
+                            if (!classMap[type]) {
+                                classMap[type] = {
+                                    name: type, averageMatch: 0, standardDeviation: 0, numberOfFiles: 0,
+                                    class: type, files: [],
+                                };
+                            }
+                            const maxOverlap = Math.max(...file.pairs.map(pair => pair.totalOverlap));
+                            classMap[type].files.push(
+                                {
+                                    id: file.id,
+                                    filepath: file.filepath,
+                                    class: file.type,
+                                    sha: file.sha,
+                                    lineCount: file.lineCount,
+                                    classMatch: file.pairs.reduce((acc, pair) => acc + pair.similarity, 0),
+                                    top: (() => {
+                                        const topPair = file.pairs.sort((a, b) => b.similarity - a.similarity)[0];
+                                        return {
+                                            similarity: topPair.similarity,
+                                            filepath: topPair.leftFileSha === file.sha ? topPair.rightFilepath : topPair.leftFilepath,
+                                            repositoryName: topPair.files.find(f => f.sha !== file.sha).repository.name,
+                                            repositoryOwner: topPair.files.find(f => f.sha !== file.sha).repository.owner,
+                                        };
+                                    })(),
+                                    pairs: file.pairs.map(pair => {
+                                        return {
+                                            id: pair.id,
+                                            similarity: pair.similarity,
+                                            totalOverlap: pair.totalOverlap,
+                                            normalizedImpact: pair.totalOverlap / maxOverlap,
+                                            longestFragment: pair.longestFragment,
+                                            filepath: pair.leftFileSha === file.sha ? pair.rightFilepath : pair.leftFilepath,
+                                            sha: pair.leftFileSha === file.sha ? pair.rightFileSha : pair.leftFileSha,
+                                            repositoryName: pair.files.find(f => f.sha !== file.sha).repository.name,
+                                            repositoryOwner: pair.files.find(f => f.sha !== file.sha).repository.owner,
+                                        };
+                                    })
+                                }
+                            );
+                            
+                            classMap[type].averageMatch = classMap[type].files.reduce((acc, file) => acc + file.classMatch, 0) / classMap[type].files.length;
+                            classMap[type].standardDeviation = this.std(classMap[type].files.map(file => file.classMatch));
+                            classMap[type].numberOfFiles = classMap[type].files.length;
+                        });
+                        const classes = Object.values(classMap);
+                        const repositoryLines = files.reduce((acc, file) => acc + file.lineCount, 0);
+                        const numberOfFiles = files.length;
+        
+                        return [id, { id, name, owner, sha, repositoryLines, numberOfFiles, classes }];
+                    })
+            ).values()
+        );
+
+        const result = {
+            id: group.id,
+            sha: group.sha,
+            date: group.groupDate,
+            numberOfRepos: group.numberOfRepos,
+            numberOfFiles: repositories.reduce((acc, repo) => acc + repo.numberOfFiles, 0),
+            groupLines: repositories.reduce((acc, repo) => acc + repo.repositoryLines, 0),
+            repositories: repositories,
+        };
+
+        return result;
+    }
+
+    async getGroupHeriarquicalBySha(sha: string): Promise<any> {
+        const groupFind = this.groupPrismaQueryBySha(sha);
+        const group = await groupFind;
+
+        /* const repositories = Array.from(
+            new Map(
+                group.comparisons.flatMap(comparison => comparison.repositories)
+                    .map(repo => {
+                        const { id, name, owner, sha, files } = repo;
+                        const folderMap = {};
+                        files.forEach(file => {
+                            const folderPath = file.filepath.split('/').slice(0, -1).join('/');
+                            const linesCount = file.lineCount;
+                            if (!folderMap[folderPath]) {
+                                folderMap[folderPath] = {
+                                    name: file.filepath.split('/').slice(-2, -1), folderLines: 0, type: [], files: [],
+                                };
+                            }
+                            folderMap[folderPath].folderLines += linesCount;
+                            folderMap[folderPath].files.push(file);
+                            if (!folderMap[folderPath].type.includes(file.type)) {
+                                folderMap[folderPath].type.push(file.type);
+                            }
+                        });
+                        const folders = Object.values(folderMap);
+        
+                        return [id, { id, name, owner, sha, folders }];
+                    })
+            ).values()
+        ); */
+
+        const repositories = Array.from(
+            new Map(
+                group.comparisons.flatMap(comparison => comparison.repositories)
+                    .map(repo => {
+                        const { id, name, owner, sha, files } = repo;
+                        const classMap = {};
+                        files.forEach(file => {
+                            const type = file.type;
+                            if (!classMap[type]) {
+                                classMap[type] = {
+                                    name: type, averageMatch: 0, standardDeviation: 0, numberOfFiles: 0,
+                                    class: type, files: [],
+                                };
+                            }
+                            const maxOverlap = Math.max(...file.pairs.map(pair => pair.totalOverlap));
+                            classMap[type].files.push(
+                                {
+                                    id: file.id,
+                                    filepath: file.filepath,
+                                    class: file.type,
+                                    sha: file.sha,
+                                    lineCount: file.lineCount,
+                                    classMatch: file.pairs.reduce((acc, pair) => acc + pair.similarity, 0),
+                                    top: (() => {
+                                        const topPair = file.pairs.sort((a, b) => b.similarity - a.similarity)[0];
+                                        return {
+                                            similarity: topPair.similarity,
+                                            filepath: topPair.leftFileSha === file.sha ? topPair.rightFilepath : topPair.leftFilepath,
+                                            repositoryName: topPair.files.find(f => f.sha !== file.sha).repository.name,
+                                            repositoryOwner: topPair.files.find(f => f.sha !== file.sha).repository.owner,
+                                        };
+                                    })(),
+                                    pairs: file.pairs.map(pair => {
+                                        return {
+                                            id: pair.id,
+                                            similarity: pair.similarity,
+                                            totalOverlap: pair.totalOverlap,
+                                            normalizedImpact: pair.totalOverlap / maxOverlap,
+                                            longestFragment: pair.longestFragment,
+                                            filepath: pair.leftFileSha === file.sha ? pair.rightFilepath : pair.leftFilepath,
+                                            sha: pair.leftFileSha === file.sha ? pair.rightFileSha : pair.leftFileSha,
+                                            repositoryName: pair.files.find(f => f.sha !== file.sha).repository.name,
+                                            repositoryOwner: pair.files.find(f => f.sha !== file.sha).repository.owner,
+                                        };
+                                    })
+                                }
+                            );
+                            
+                            classMap[type].averageMatch = classMap[type].files.reduce((acc, file) => acc + file.classMatch, 0) / classMap[type].files.length;
+                            classMap[type].standardDeviation = this.std(classMap[type].files.map(file => file.classMatch));
+                            classMap[type].numberOfFiles = classMap[type].files.length;
+                        });
+                        const classes = Object.values(classMap);
+                        const repositoryLines = files.reduce((acc, file) => acc + file.lineCount, 0);
+                        const numberOfFiles = files.length;
+        
+                        return [id, { id, name, owner, sha, repositoryLines, numberOfFiles, classes }];
+                    })
+            ).values()
+        );
+
+        const result = {
+            id: group.id,
+            sha: group.sha,
+            date: group.groupDate,
+            numberOfRepos: group.numberOfRepos,
+            numberOfFiles: repositories.reduce((acc, repo) => acc + repo.numberOfFiles, 0),
+            groupLines: repositories.reduce((acc, repo) => acc + repo.repositoryLines, 0),
+            repositories: repositories,
+        };
+
+        return result;
     }
 
     async getGroupById(id: number): Promise<Group> {

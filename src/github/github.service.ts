@@ -328,9 +328,9 @@ export class GithubService {
             return "Service";
         } else if (repositoryPattern.test(fileContent)) {
             return "Repository";
-        } else if (entityPattern.test(fileContent)) {
+        }/*  else if (entityPattern.test(fileContent)) {
             return "Entity";
-        }
+        } */
 
         return "Unknown";
     }
@@ -339,42 +339,39 @@ export class GithubService {
         const user_token = await this.user.getUserToken(username);
         const token = user_token || process.env.GH_TOKEN;
         this.octokit = new Octokit({ auth: token });
-
+    
         const urls = repositories.includes('\n') ? repositories.split('\n').filter(url => url.trim() !== '') : [repositories];
         const uniqueUrls = Array.from(new Set(urls));
-
+    
         const repos = uniqueUrls.map(url => {
             const parts = url.split('/');
             const owner = parts[3];
             const name = parts[4];
             return { owner, name };
         });
-
-        console.log("REPOSITORIOS: ", repos);
-
-        const results = [];
-        for (const repo of repos) {
+    
+        const results = await Promise.all(repos.map(async (repo) => {
             try {
                 const response = await this.octokit.repos.get({
                     owner: repo.owner,
                     repo: repo.name,
                 });
-
+        
                 if (response.status === 200) {
-                    console.log(`\n${repo.owner}/${repo.name} -> Lenguaje: ${response.data.language}`);
-
+        
                     if (response.data.language === "Java") {
                         const isSpringBootProject = await this.identifySpringBootProject(repo.owner, repo.name);
                         if (isSpringBootProject) {
-                            results.push(response.data);
+                            return response.data;
                         }
                     }
                 }
             } catch (error) {
                 console.error(`Error fetching repository ${repo.owner}/${repo.name}:`, error);
             }
-        }
-
-        return results;
+            return null;
+        }));
+        
+        return results.filter(result => result !== null);
     }
 }

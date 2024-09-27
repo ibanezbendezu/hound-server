@@ -309,7 +309,9 @@ export class ComparisonsService {
             
             //FILTRAR PARES
             const filteredPairs = results.allPairs().filter(pair => {
-                return pair.leftFile.extra.repository !== pair.rightFile.extra.repository;
+                const isDifferentRepository = pair.leftFile.extra.repository !== pair.rightFile.extra.repository;
+                const isSameFileType = pair.leftFile.extra.type === pair.rightFile.extra.type;
+                return isDifferentRepository && isSameFileType;
             });
                         
             //GUARDAR EN LA BASE DE DATOS
@@ -369,7 +371,7 @@ export class ComparisonsService {
                                             charCount: pair.leftFile.charCount,
                                             lineCount: pair.leftFile.lineCount,
                                             language: this.getFileLanguage(pair.leftFile.path),
-                                            type: this.identifyFileType(pair.leftFile.content),
+                                            type: pair.leftFile.extra.type,
                                             repository: { connect: { id: repositoryA.id } }
                                         }
                                     },
@@ -381,7 +383,7 @@ export class ComparisonsService {
                                             charCount: pair.rightFile.charCount,
                                             lineCount: pair.rightFile.lineCount,
                                             language: this.getFileLanguage(pair.rightFile.path),
-                                            type: this.identifyFileType(pair.rightFile.content),
+                                            type: pair.rightFile.extra.type,
                                             repository: { connect: { id: repositoryB.id } }
                                         }
                                     }

@@ -86,7 +86,7 @@ export class GithubController {
             if (!repositories) throw new NotFoundException("Repositories not found");
             return repositories;
         } catch (error) {
-            throw new NotFoundException("Token inválido o expirado");
+            throw error;
         }
     }
 }
