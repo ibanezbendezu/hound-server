@@ -152,7 +152,7 @@ export class GroupsService {
                             const type = file.type;
                             if (!classMap[type]) {
                                 classMap[type] = {
-                                    name: type, averageMatch: 0, standardDeviation: 0, numberOfFiles: 0,
+                                    name: type, averageMatch: 0, standardDeviation: 0, numberOfFiles: 0, classLines: 0,
                                     class: type, files: [],
                                 };
                             }
@@ -193,6 +193,7 @@ export class GroupsService {
                             classMap[type].averageMatch = classMap[type].files.reduce((acc, file) => acc + file.classMatch, 0) / classMap[type].files.length;
                             classMap[type].standardDeviation = this.std(classMap[type].files.map(file => file.classMatch));
                             classMap[type].numberOfFiles = classMap[type].files.length;
+                            classMap[type].classLines = classMap[type].files.reduce((acc, file) => acc + file.lineCount, 0);
                         });
                         const classes = Object.values(classMap);
                         const repositoryLines = files.reduce((acc, file) => acc + file.lineCount, 0);
