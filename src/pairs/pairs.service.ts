@@ -25,6 +25,8 @@ export class PairsService {
             select: {
                 id: true,
                 similarity: true,
+                totalOverlap: true,
+                longestFragment: true,
                 leftFileSha: true,
                 rightFileSha: true,
                 files: {

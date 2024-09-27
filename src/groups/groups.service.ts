@@ -164,10 +164,11 @@ export class GroupsService {
                                     class: file.type,
                                     sha: file.sha,
                                     lineCount: file.lineCount,
-                                    classMatch: file.pairs.reduce((acc, pair) => acc + pair.similarity, 0),
+                                    classMatch: file.pairs.reduce((acc, pair) => acc + pair.similarity, 0) / file.pairs.length,
                                     top: (() => {
                                         const topPair = file.pairs.sort((a, b) => b.similarity - a.similarity)[0];
                                         return {
+                                            id: topPair.id,
                                             similarity: topPair.similarity,
                                             filepath: topPair.leftFileSha === file.sha ? topPair.rightFilepath : topPair.leftFilepath,
                                             repositoryName: topPair.files.find(f => f.sha !== file.sha).repository.name,
@@ -183,6 +184,7 @@ export class GroupsService {
                                             longestFragment: pair.longestFragment,
                                             filepath: pair.leftFileSha === file.sha ? pair.rightFilepath : pair.leftFilepath,
                                             sha: pair.leftFileSha === file.sha ? pair.rightFileSha : pair.leftFileSha,
+                                            repositoryId: pair.files.find(f => f.sha !== file.sha).repository.id,
                                             repositoryName: pair.files.find(f => f.sha !== file.sha).repository.name,
                                             repositoryOwner: pair.files.find(f => f.sha !== file.sha).repository.owner,
                                         };
