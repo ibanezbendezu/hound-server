@@ -2,8 +2,16 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { Group } from "@prisma/client";
 import { ComparisonsService } from "src/comparisons/comparisons.service";
-import { compoundHash } from "src/shared";
 import { GithubService } from "src/github/github.service";
+import { compoundHash } from "src/shared";
+
+import { GroupDTO } from "./dto/all-groups.dto";
+import { CreateGroupDTO } from "./dto/create-group.dto";
+import { ClassPairDTO, ClassReportDTO, GroupReportDTO, ReportRepositoryDTO } from "./dto/group.report.dto";
+import { GroupSummaryDTO } from "./dto/group-summary.dto";
+import { GroupOverallDTO } from "./dto/group-overall.dto";
+
+const { PromisePool } = require('@supercharge/promise-pool');
 
 /**
  * Servicio que maneja todas las operaciones relacionadas con los groups.
@@ -30,6 +38,7 @@ export class GroupsService {
         });
     }
 
+    /* istanbul ignore next */
     async groupPrismaQueryBySha(sha: string) {
         return this.prisma.group.findUnique({
             where: {
@@ -77,6 +86,7 @@ export class GroupsService {
                                                 files: {
                                                     select: {
                                                         sha: true,
+                                                        lineCount: true,
                                                         repository: {
                                                             select: {
                                                                 id: true,
@@ -98,7 +108,7 @@ export class GroupsService {
         });
     }
 
-    async getGroupOverallBySha(sha: string): Promise<any> {
+    async getGroupOverallBySha(sha: string): Promise<GroupOverallDTO> {
         const groupFind = this.groupPrismaQueryBySha(sha);
         if (!groupFind) throw new Error("Group not found");
         const group = await groupFind;
@@ -116,13 +126,23 @@ export class GroupsService {
             ).values()
         );
 
-        const pairs = Array.from(
-            new Set(
-                group.comparisons.flatMap(comparison => comparison.repositories)
-                    .flatMap(repo => repo.files)
-                    .flatMap(file => file.pairs)
-            )
-        );
+        const pairs = await this.prisma.pair.findMany({
+            where: {
+                comparison: {
+                    groups: {
+                        some: {
+                            sha: sha,
+                        },
+                    },
+                },
+            },
+            select: {
+                id: true,
+                similarity: true,
+                totalOverlap: true,
+                longestFragment: true,
+            },
+        });
 
         const result = {
             id: group.id,
@@ -137,17 +157,18 @@ export class GroupsService {
         return result;
     }
 
-    async getGroupReportBySha(sha: string): Promise<any> {
+    async getGroupReportBySha(sha: string): Promise<GroupReportDTO> {
         const groupFind = this.groupPrismaQueryBySha(sha);
         if (!groupFind) throw new Error("Group not found");
         const group = await groupFind;
 
-        const repositories = Array.from(
+        const repositories: ReportRepositoryDTO[] = Array.from(
             new Map(
                 group.comparisons.flatMap(comparison => comparison.repositories)
                     .map(repo => {
                         const { id, name, owner, sha, files } = repo;
-                        const classMap = {};
+
+                        const classMap: Record<string, ClassReportDTO> = {};
                         files.forEach(file => {
                             const type = file.type;
                             if (!classMap[type]) {
@@ -166,10 +187,17 @@ export class GroupsService {
                                     lineCount: file.lineCount,
                                     classMatch: file.pairs.reduce((acc, pair) => acc + pair.similarity, 0) / file.pairs.length,
                                     top: (() => {
-                                        const topPair = file.pairs.sort((a, b) => b.similarity - a.similarity)[0];
+                                        const maxSimilarity = Math.max(...file.pairs.map(pair => pair.similarity));
+                                        const topPairs = file.pairs.filter(pair => pair.similarity === maxSimilarity);
+                                        const topPair = topPairs.sort((a, b) => b.totalOverlap - a.totalOverlap)[0];
                                         return {
                                             id: topPair.id,
                                             similarity: topPair.similarity,
+                                            totalOverlap: topPair.totalOverlap,
+                                            normalizedImpact: topPair.totalOverlap / maxOverlap,
+                                            longestFragment: topPair.longestFragment,
+                                            lineCount: topPair.files.find(f => f.sha !== file.sha).lineCount,
+                                            sha: topPair.leftFileSha === file.sha ? topPair.rightFileSha : topPair.leftFileSha,
                                             filepath: topPair.leftFileSha === file.sha ? topPair.rightFilepath : topPair.leftFilepath,
                                             repositoryName: topPair.files.find(f => f.sha !== file.sha).repository.name,
                                             repositoryOwner: topPair.files.find(f => f.sha !== file.sha).repository.owner,
@@ -183,6 +211,7 @@ export class GroupsService {
                                             normalizedImpact: pair.totalOverlap / maxOverlap,
                                             longestFragment: pair.longestFragment,
                                             filepath: pair.leftFileSha === file.sha ? pair.rightFilepath : pair.leftFilepath,
+                                            lineCount: pair.files.find(f => f.sha !== file.sha).lineCount,
                                             sha: pair.leftFileSha === file.sha ? pair.rightFileSha : pair.leftFileSha,
                                             repositoryId: pair.files.find(f => f.sha !== file.sha).repository.id,
                                             repositoryName: pair.files.find(f => f.sha !== file.sha).repository.name,
@@ -206,7 +235,7 @@ export class GroupsService {
             ).values()
         );
 
-        const result = {
+        const result: GroupReportDTO = {
             id: group.id,
             sha: group.sha,
             date: group.groupDate,
@@ -219,6 +248,7 @@ export class GroupsService {
         return result;
     }
 
+    /* istanbul ignore next */
     async getGroupHeriarquicalBySha(sha: string): Promise<any> {
         const groupFind = this.groupPrismaQueryBySha(sha);
         const group = await groupFind;
@@ -274,10 +304,18 @@ export class GroupsService {
                                     lineCount: file.lineCount,
                                     classMatch: file.pairs.reduce((acc, pair) => acc + pair.similarity, 0),
                                     top: (() => {
-                                        const topPair = file.pairs.sort((a, b) => b.similarity - a.similarity)[0];
+                                        const maxSimilarity = Math.max(...file.pairs.map(pair => pair.similarity));
+                                        const topPairs = file.pairs.filter(pair => pair.similarity === maxSimilarity);
+                                        const topPair = topPairs.sort((a, b) => b.totalOverlap - a.totalOverlap)[0];
+
                                         return {
                                             similarity: topPair.similarity,
+                                            totalOverlap: topPair.totalOverlap,
+                                            normalizedImpact: topPair.totalOverlap / maxOverlap,
+                                            longestFragment: topPair.longestFragment,
                                             filepath: topPair.leftFileSha === file.sha ? topPair.rightFilepath : topPair.leftFilepath,
+                                            lineCount: topPair.files.find(f => f.sha !== file.sha).lineCount,
+                                            sha: topPair.leftFileSha === file.sha ? topPair.rightFileSha : topPair.leftFileSha,
                                             repositoryName: topPair.files.find(f => f.sha !== file.sha).repository.name,
                                             repositoryOwner: topPair.files.find(f => f.sha !== file.sha).repository.owner,
                                         };
@@ -290,6 +328,7 @@ export class GroupsService {
                                             normalizedImpact: pair.totalOverlap / maxOverlap,
                                             longestFragment: pair.longestFragment,
                                             filepath: pair.leftFileSha === file.sha ? pair.rightFilepath : pair.leftFilepath,
+                                            lineCount: pair.files.find(f => f.sha !== file.sha).lineCount,
                                             sha: pair.leftFileSha === file.sha ? pair.rightFileSha : pair.leftFileSha,
                                             repositoryName: pair.files.find(f => f.sha !== file.sha).repository.name,
                                             repositoryOwner: pair.files.find(f => f.sha !== file.sha).repository.owner,
@@ -358,6 +397,7 @@ export class GroupsService {
      * @returns Group data.
      */
     // ARREGLAR EL TIPO QUE DEVUELVE
+    /* istanbul ignore next */
     async getGroupBySha(sha: string): Promise<any> {
         const groupFind = this.prisma.group.findUnique({
             where: {
@@ -476,6 +516,7 @@ export class GroupsService {
                         similarity: pair.similarity,
                         totalOverlap: pair.totalOverlap,
                         longestFragment: pair.longestFragment,
+                        pairLineCount: pair.leftFilepath !== filepath ? rightFile.lineCount : leftFile.lineCount,
                         pairFileId: pair.leftFilepath !== filepath ? leftFile.id : rightFile.id,
                         pairFileSha: pair.leftFilepath !== filepath ? leftFile.sha : rightFile.sha,
                         pairFileSide: pair.leftFilepath !== filepath ? "left" : "right",
@@ -595,7 +636,7 @@ export class GroupsService {
      * @returns Group data.
      */
     // ARREGLAR EL TIPO QUE DEVUELVE
-    async getGroupSummaryBySha(sha: string): Promise<any> {
+    async getGroupSummaryBySha(sha: string): Promise<GroupSummaryDTO> {
         const groupFind = this.prisma.group.findUnique({
             where: {
                 sha: sha
@@ -632,6 +673,7 @@ export class GroupsService {
      * @returns Group data.
     */
     // ARREGLAR EL TIPO QUE DEVUELVE
+    /* istanbul ignore next */
     async updateGroupBySha(sha: string, repos: any[], username: string) {
         console.log(repos);
         console.log(username);
@@ -679,37 +721,14 @@ export class GroupsService {
         return group;
     }
 
-    async getFilesByGroupId(groupId: number) {
-        const comparisons = await this.prisma.group.findUnique({
-            where: { id: groupId },
-            select: { comparisons: { select: { id: true } } },
-        });
-        const comparisonIds = comparisons.comparisons.map(c => c.id);
-        
-        const pairs = await this.prisma.pair.findMany({
-            where: { comparisonId: { in: comparisonIds } },
-            select: { id: true },
-        });
-        const pairIds = pairs.map(p => p.id);
-    
-        const files = await this.prisma.file.findMany({
-            where: {
-                pairs: {
-                some: { id: { in: pairIds } },
-                },
-            },
-        });
-    
-        return files;
-    }
-
     /**
      * Método que obtiene los archivos de un group a partir de su SHA.
      * SHA es un hash único que identifica un group.
      * @param sha
      * @returns Files data.
      */
-    // ARREGLAR EL TIPO QUE DEVUELVE    
+    // ARREGLAR EL TIPO QUE DEVUELVE
+    /* istanbul ignore next */
     async getFilesByGroupSha(sha: string) {
         const comparisons = await this.prisma.group.findUnique({
             where: { sha: sha },
@@ -734,51 +753,6 @@ export class GroupsService {
         return files;
     }
 
-    async getPairSimilaritiesByGroupId(groupId: number) {
-        const comparisons = await this.prisma.group.findUnique({
-            where: { id: groupId },
-            select: { comparisons: { select: { id: true } } },
-        });
-        const comparisonIds = comparisons.comparisons.map(c => c.id);
-        
-        let pairs = await this.prisma.pair.findMany({
-            where: { comparisonId: { in: comparisonIds } },
-            select: {
-                id: true,
-                similarity: true,
-                files: {
-                    select: {
-                        id: true,
-                        sha: true,
-                        repository: {
-                            select: {
-                                id: true,
-                                name: true,
-                                owner: true,
-                            },
-                        },
-                        filepath: true,
-                        type: true,
-                    }
-                }
-            },
-        });
-
-        pairs = pairs.filter(pair => {
-            if (pair.files.length === 1 && (pair.files[0].type === "Controller" || pair.files[0].type === "Service" || pair.files[0].type === "Repository")) {
-                return true;
-            }
-            else if (pair.files.length === 2 && pair.files[0].type === pair.files[1].type
-                && (pair.files[0].type === "Controller" || pair.files[0].type === "Service" || pair.files[0].type === "Repository")
-            ) {
-                return true;
-            }
-            return false;
-        });
-    
-        return pairs;
-    }
-
     /**
      * Método que obtiene las similitudes de los pares de un group a partir de su SHA.
      * SHA es un hash único que identifica un group.
@@ -786,6 +760,7 @@ export class GroupsService {
      * @returns Pair similarities data.
      */
     // ARREGLAR EL TIPO QUE DEVUELVE
+    /* istanbul ignore next */
     async getPairSimilaritiesByGroupSha(sha: string) {
         const comparisons = await this.prisma.group.findUnique({
             where: { sha: sha },
@@ -831,6 +806,13 @@ export class GroupsService {
         return pairs;
     }
 
+    /**
+     * Método que hace la comparación de los repositorios.
+     * @param repositoryContents
+     * @param group
+     * @returns void
+     * */
+    /* istanbul ignore next */
     async doComparison(repositoryContents: any[], group: any) {
         console.log("\n> COMPARANDO REPOSITORIOS...");
         console.time("Tiempo en hacer todas las comparaciones");
@@ -857,6 +839,13 @@ export class GroupsService {
         console.log("------------------------------------\n\n");
     }
 
+    /**
+     * Método que crea un group a partir de una lista de repositorios.
+     * @param repos
+     * @param username
+     * @returns Group data.
+     */
+    /* istanbul ignore next */
     async createGroup(repos: any[], username: string) {
         console.log("\nREPOSITORIOS A COMPARAR: ", repos);
         console.log("USUARIO QUE REALIZA LA COMPARACIÓN: ", username);

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Tokenizer } from "./tokenizer/tokenizer.js";
+import { Tokenizer } from "./tokenizer/tokenizer";
 import { File } from "../core";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

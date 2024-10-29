@@ -172,7 +172,7 @@ export class GithubService {
 
         if (!file) return null;
 
-        const content = await this.getFileContent(file.repository.owner, file.repository.name, file.sha);
+        const content = await this.getContent(file.repository.owner, file.repository.name, file.sha);
         return content;
     }
 
@@ -197,7 +197,7 @@ export class GithubService {
 
             if (!file) return null;
 
-            const content = await this.getFileContent(file.repository.owner, file.repository.name, file.sha);
+            const content = await this.getContent(file.repository.owner, file.repository.name, file.sha);
             return content;
         } catch (error) {
             console.error(error);
@@ -226,6 +226,17 @@ export class GithubService {
             this.cache.set(cacheKey, fileContent);
         }
     
+        return fileContent;
+    }
+
+    private async getContent(owner: string, repo: string, file_sha: string): Promise<string> {
+        const { data } = await this.octokit.git.getBlob({
+            owner,
+            repo,
+            file_sha
+        });
+        const fileContent = Buffer.from(data.content, "base64").toString("utf-8");
+            
         return fileContent;
     }
 

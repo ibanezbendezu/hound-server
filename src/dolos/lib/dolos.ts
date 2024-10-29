@@ -1,7 +1,7 @@
-import { Report } from "./report.js";
-import { CustomOptions, Options } from "./options.js";
-import { Tokenizer } from "./tokenizer/tokenizer.js";
-import { Language, LanguagePicker } from "./language.js";
+import { Report } from "./report";
+import { CustomOptions, Options } from "./options";
+import { Tokenizer } from "./tokenizer/tokenizer";
+import { Language, LanguagePicker } from "./language";
 import { FingerprintIndex, File } from "../core/";
 
 

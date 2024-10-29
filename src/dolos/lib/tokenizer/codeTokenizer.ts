@@ -1,7 +1,7 @@
 import { SyntaxNode } from "tree-sitter";
 import { Region, assert } from "../../core";
-import { Token, Tokenizer } from "./tokenizer.js";
-import { ProgrammingLanguage } from "../language.js";
+import { Token, Tokenizer } from "./tokenizer";
+import { ProgrammingLanguage } from "../language";
 
 const Parser = require("tree-sitter");
 

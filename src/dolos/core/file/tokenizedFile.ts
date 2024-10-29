@@ -1,5 +1,5 @@
-import { File } from "./file.js";
-import { Region } from "../util/region.js";
+import { File } from "./file";
+import { Region } from "../util/region";
 
 export class TokenizedFile extends File {
 

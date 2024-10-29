@@ -1,5 +1,5 @@
-export { Dolos } from "./lib/dolos.js";
-export { Report } from "./lib/report.js";
-export { Options, CustomOptions } from "./lib/options.js";
-export { Language, LanguagePicker, LanguageError } from "./lib/language.js";
-export { Region } from "./core/util/region.js";
+export { Dolos } from "./lib/dolos";
+export { Report } from "./lib/report";
+export { Options, CustomOptions } from "./lib/options";
+export { Language, LanguagePicker, LanguageError } from "./lib/language";
+export { Region } from "./core/util/region";

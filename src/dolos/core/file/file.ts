@@ -1,4 +1,4 @@
-import { Identifiable } from "../util/identifiable.js";
+import { Identifiable } from "../util/identifiable";
 
 export interface ExtraInfo {
     filename?: string;

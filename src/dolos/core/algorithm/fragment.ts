@@ -1,7 +1,7 @@
-import { assert } from "../util/utils.js";
-import { PairedOccurrence } from "./pairedOccurrence.js";
-import { Region } from "../util/region.js";
-import { Range } from "../util/range.js";
+import { assert } from "../util/utils";
+import { PairedOccurrence } from "./pairedOccurrence";
+import { Region } from "../util/region";
+import { Range } from "../util/range";
 
 /**
  * A fragment is a collection of one or more consequent pairedOccurrences (kgrams).

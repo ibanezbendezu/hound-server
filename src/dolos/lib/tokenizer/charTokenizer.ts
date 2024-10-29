@@ -1,5 +1,5 @@
 import { Region } from "../../core";
-import { Token, Tokenizer } from "./tokenizer.js";
+import { Token, Tokenizer } from "./tokenizer";
 
 export class CharTokenizer extends Tokenizer {
     /**

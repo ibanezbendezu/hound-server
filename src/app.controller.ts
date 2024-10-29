@@ -28,12 +28,12 @@ export class AppController {
         return req.user;
     }
 
-    @Get("dolos")
+    /* @Get("dolos")
     dolos() {
         return this.appService.dolosTest();
-    }
+    } */
 
-    @Get("/make")
+    @Get("/test")
     async comparisonTest() {
         const comparison = await this.appService.comparisonTestService();
         return comparison;

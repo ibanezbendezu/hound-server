@@ -1,6 +1,6 @@
 import { TokenizedFile, FingerprintIndex, Pair, SharedFingerprint, FileEntry } from "../core";
-import { DolosOptions, Options } from "./options.js";
-import { Language } from "./language.js";
+import { DolosOptions, Options } from "./options";
+import { Language } from "./language";
 
 export interface Metadata extends DolosOptions {
     languageDetected: boolean;

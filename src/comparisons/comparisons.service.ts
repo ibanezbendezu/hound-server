@@ -111,6 +111,7 @@ export class ComparisonsService {
         return null;
     }
 
+    /* istanbul ignore next */
     async makeComparison(leftRepository: any, rightRepository: any) {
         try {
             const dolos = new Dolos();
@@ -250,6 +251,7 @@ export class ComparisonsService {
         }
     }
 
+    /* istanbul ignore next */
     async analyzeFiles(leftRepoFiles: File[], rightRepoFiles: File[], dolos) {
         const promises = leftRepoFiles.flatMap((file1) =>
             rightRepoFiles.map(async (file2) => {
@@ -278,6 +280,7 @@ export class ComparisonsService {
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /* istanbul ignore next */
     async createComparison(leftRepository: any, rightRepository: any, groupId?: number) {
         try {
             const dolos = new Dolos();

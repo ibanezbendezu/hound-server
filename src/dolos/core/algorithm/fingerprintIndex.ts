@@ -1,12 +1,12 @@
-import { HashFilter } from "../hashing/hashFilter.js";
-import { Range } from "../util/range.js";
-import { Region } from "../util/region.js";
-import { WinnowFilter } from "../hashing/winnowFilter.js";
+import { HashFilter } from "../hashing/hashFilter";
+import { Range } from "../util/range";
+import { Region } from "../util/region";
+import { WinnowFilter } from "../hashing/winnowFilter";
 import { TokenizedFile } from "../file/tokenizedFile";
-import { SharedFingerprint } from "./sharedFingerprint.js";
-import { ASTRegion } from "./pairedOccurrence.js";
-import { Pair } from "./pair.js";
-import { assert, assertDefined, closestMatch } from "../util/utils.js";
+import { SharedFingerprint } from "./sharedFingerprint";
+import { ASTRegion } from "./pairedOccurrence";
+import { Pair } from "./pair";
+import { assert, assertDefined, closestMatch } from "../util/utils";
 
 export type Hash = number;
 

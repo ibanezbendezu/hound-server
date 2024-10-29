@@ -1,5 +1,5 @@
 import { File, TokenizedFile, Region } from "../../core";
-import { Language } from "../language.js";
+import { Language } from "../language";
 
 export interface Token {
     token: string;

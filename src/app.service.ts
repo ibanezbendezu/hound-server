@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Dolos } from "./dolos";
+/* import { Dolos } from "./dolos"; */
 import { GroupsService } from "./groups/groups.service";
 
 @Injectable()
@@ -18,7 +18,7 @@ export class AppService {
         return "Este es un recurso protegido";
     }
 
-    async dolosTest() {
+    /* async dolosTest() {
         const files = [
             {"path": "src/main/java/controllers/ClockController.java",
                 "content": `package cl.tingeso.mueblesstgo.controllers;
@@ -113,17 +113,14 @@ export class AppService {
             }
             console.log("--------------------------------------------------");
         }
-    }
+    } */
 
     async comparisonTestService() {
         const username = "ibanezbendezu";
         const repos = [
-            /* { owner: "ibanezbendezu", name: "tttest" },
-            { owner: "ibanezbendezu", name: "tttest2" },
-            { owner: "ibanezbendezu", name: "tttest3" }, */
             { owner: "ibanezbendezu", name: "tingeso-mono-test" },
             { owner: "ibanezbendezu", name: "tingeso-ev1" },
-            /* { owner: "holYadio", name: "TingesoPEP1" },
+            { owner: "holYadio", name: "TingesoPEP1" },
             { owner: "HolYadio", name: "tingesoPEP2-AcopioService" },
             { owner: "HolYadio", name: "tingesoPEP2-ProveedorService" },
             { owner: "HolYadio", name: "tingesoPEP2-PlanillaPagosService" },
@@ -132,8 +129,6 @@ export class AppService {
             { owner: "Vanina11", name: "mueblesstgo" },
             { owner: "acientgear", name: "tingeso" },
             { owner: "CatalinaOlivares", name: "Tingeso1" },
-             
-            { owner: "Issipisi", name: "Proyecto1_Tingeso" }, */
         ];
         
         const results = await this.group.createGroup(repos, username);

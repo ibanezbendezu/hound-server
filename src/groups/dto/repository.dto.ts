@@ -1,4 +1,4 @@
-export class RepositoryDto {
+export class RepositoryDTO {
     owner: string;
     name: string;
 }

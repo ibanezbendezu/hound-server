@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PairByIdDTO } from './dto/pair-by-id.dto';
+import { PairsByGroupShaDTO } from './dto/pairs-by-group-sha.dto';
+import { AllPairsDTO } from './dto/all-pairs.dto';
 
 /**
  * Servicio que maneja todas las solicitudes relacionadas con los pares.
@@ -17,7 +20,7 @@ export class PairsService {
      * @returns Par encontrado.
      */
     // ARREGLAR EL TIPO DE DATO QUE DEVUELVE ESTA FUNCIÓN
-    async getPairById(pairId: number) {
+    async getPairById(pairId: number): Promise<PairByIdDTO | null> {
         const pairFound = await this.prisma.pair.findUnique({
             where: {
                 id: pairId,
@@ -83,8 +86,21 @@ export class PairsService {
                 };
             });
         }
+
+        if (!pairFound) {
+            throw new Error(`Pair with id ${pairId} not found`);
+        }
+    
+        if (!pairFound.files) {
+            throw new Error(`Files not found for pair with id ${pairId}`);
+        }
+
         const file = pairFound.files.find(file => file.sha === pairFound.leftFileSha);
         const pairFile = pairFound.files.find(file => file.sha === pairFound.rightFileSha);
+
+        if (!file || !pairFile) {
+            throw new Error(`Files with specified SHAs not found for pair with id ${pairId}`);
+        }
 
         const finalData = {
             id: pairFound.id,
@@ -110,7 +126,7 @@ export class PairsService {
      * @returns Pares del group.
      */
     // ARREGLAR EL TIPO DE DATO QUE DEVUELVE ESTA FUNCIÓN
-    async getPairsByGroupSha(groupSha: string, fileSha: string) {
+    async getPairsByGroupSha(groupSha: string, fileSha: string): Promise<PairsByGroupShaDTO> {
         const fileFound = await this.prisma.file.findUnique({
             where: {
                 sha: fileSha,
@@ -125,6 +141,10 @@ export class PairsService {
                 },
             }
         });
+
+        if (!fileFound) {
+            throw new Error('File not found');
+        }
 
         const pairsFound = await this.prisma.pair.findMany({
             where: {
@@ -241,8 +261,7 @@ export class PairsService {
         return finalData;
     }
 
-    // ARREGLAR EL TIPO DE DATO QUE DEVUELVE ESTA FUNCIÓN
-    async getAllPairs() {
+    async getAllPairs(): Promise<AllPairsDTO[]> {
         const pairsFound = await this.prisma.pair.findMany({
             select: {
                 id: true,

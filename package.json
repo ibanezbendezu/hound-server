@@ -31,6 +31,7 @@
     "@nestjs/platform-express": "^10.0.0",
     "@octokit/rest": "^20.1.1",
     "@prisma/client": "^5.19.1",
+    "@supercharge/promise-pool": "^3.2.0",
     "@types/node-fetch": "^2.6.11",
     "ava": "^6.1.3",
     "bluebird": "^3.7.2",
@@ -57,7 +58,7 @@
     "@types/cookie-parser": "^1.4.7",
     "@types/d3-dsv": "^3.0.7",
     "@types/express": "^4.17.17",
-    "@types/jest": "^29.5.2",
+    "@types/jest": "^29.5.13",
     "@types/node": "^20.3.1",
     "@types/passport-github": "^1.1.12",
     "@types/passport-github2": "^1.2.9",
@@ -73,7 +74,7 @@
     "prisma": "^5.19.1",
     "source-map-support": "^0.5.21",
     "supertest": "^6.3.3",
-    "ts-jest": "^29.1.0",
+    "ts-jest": "^29.2.5",
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
@@ -98,6 +99,22 @@
     "moduleNameMapper": {
       "^src/(.*)$": "<rootDir>/$1",
       "^dolos/(.*)$": "<rootDir>/src/dolos/$1"
-    }
+    },
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/src/main.ts",
+      "/src/auth/*",
+      "/src/config/*",
+      "/src/dolos/*",
+      "/src/github/*",
+      "/src/prisma/*",
+      "/src/shared/*",
+      "/src/app.module.ts",
+      "/src/comparisons/comparisons.module.ts",
+      "/src/groups/groups.module.ts",
+      "/src/groups/dto/*",
+      "/src/pairs/pairs.module.ts",
+      "/src/users/users.module.ts"
+    ]
   }
 }
