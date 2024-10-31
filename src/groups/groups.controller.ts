@@ -128,4 +128,17 @@ export class GroupsController {
         if (!groupSummary) throw new NotFoundException("Group summary not found");
         return groupSummary;
     }
+
+    /**
+     * Endpoint que obtiene la data para un grafo, de un group por su SHA.
+     * SHA es un hash único que identifica un group.
+     * @param sha
+     * @returns Datos para el grafo del group.
+     */
+    @Get("/graph/:sha")
+    async getGroupGraphBySha(@Param("sha") sha: string) {
+        const groupGraph = await this.groupsService.getGroupGraphBySha(sha);
+        if (!groupGraph) throw new NotFoundException("Group graph data not found");
+        return groupGraph;
+    }
 }

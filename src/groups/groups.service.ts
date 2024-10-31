@@ -10,6 +10,7 @@ import { CreateGroupDTO } from "./dto/create-group.dto";
 import { ClassPairDTO, ClassReportDTO, GroupReportDTO, ReportRepositoryDTO } from "./dto/group.report.dto";
 import { GroupSummaryDTO } from "./dto/group-summary.dto";
 import { GroupOverallDTO } from "./dto/group-overall.dto";
+import { GraphGroupDTO, GraphLayerDTO, GraphRepositoryDTO } from "./dto/group.graph.dto";
 
 const { PromisePool } = require('@supercharge/promise-pool');
 
@@ -236,6 +237,97 @@ export class GroupsService {
         );
 
         const result: GroupReportDTO = {
+            id: group.id,
+            sha: group.sha,
+            date: group.groupDate,
+            numberOfRepos: group.numberOfRepos,
+            numberOfFiles: repositories.reduce((acc, repo) => acc + repo.numberOfFiles, 0),
+            groupLines: repositories.reduce((acc, repo) => acc + repo.repositoryLines, 0),
+            repositories: repositories,
+        };
+
+        return result;
+    }
+
+    async getGroupGraphBySha(sha: string): Promise<GraphGroupDTO> {
+        const groupFind = this.groupPrismaQueryBySha(sha);
+        if (!groupFind) throw new Error("Group not found");
+        const group = await groupFind;
+
+        const repositories: GraphRepositoryDTO[] = Array.from(
+            new Map(
+                group.comparisons.flatMap(comparison => comparison.repositories)
+                    .map(repo => {
+                        const { id, name, owner, sha, files } = repo;
+
+                        const layerMap: Record<string, GraphLayerDTO> = {};
+                        files.forEach(file => {
+                            const type = file.type;
+                            if (!layerMap[type]) {
+                                layerMap[type] = {
+                                    name: type, averageMatch: 0, standardDeviation: 0, numberOfFiles: 0, layerLines: 0,
+                                    layer: type, files: [],
+                                };
+                            }
+                            const maxOverlap = Math.max(...file.pairs.map(pair => pair.totalOverlap));
+                            layerMap[type].files.push(
+                                {
+                                    id: file.id,
+                                    filepath: file.filepath,
+                                    layer: file.type,
+                                    sha: file.sha,
+                                    lineCount: file.lineCount,
+                                    layerMatch: file.pairs.reduce((acc, pair) => acc + pair.similarity, 0) / file.pairs.length,
+                                    top: (() => {
+                                        const maxSimilarity = Math.max(...file.pairs.map(pair => pair.similarity));
+                                        const topPairs = file.pairs.filter(pair => pair.similarity === maxSimilarity);
+                                        const topPair = topPairs.sort((a, b) => b.totalOverlap - a.totalOverlap)[0];
+                                        return {
+                                            id: topPair.id,
+                                            similarity: topPair.similarity,
+                                            totalOverlap: topPair.totalOverlap,
+                                            normalizedImpact: topPair.totalOverlap / maxOverlap,
+                                            longestFragment: topPair.longestFragment,
+                                            lineCount: topPair.files.find(f => f.sha !== file.sha).lineCount,
+                                            sha: topPair.leftFileSha === file.sha ? topPair.rightFileSha : topPair.leftFileSha,
+                                            filepath: topPair.leftFileSha === file.sha ? topPair.rightFilepath : topPair.leftFilepath,
+                                            repositoryName: topPair.files.find(f => f.sha !== file.sha).repository.name,
+                                            repositoryOwner: topPair.files.find(f => f.sha !== file.sha).repository.owner,
+                                        };
+                                    })(),
+                                    pairs: file.pairs.map(pair => {
+                                        return {
+                                            id: pair.id,
+                                            similarity: pair.similarity,
+                                            totalOverlap: pair.totalOverlap,
+                                            normalizedImpact: pair.totalOverlap / maxOverlap,
+                                            longestFragment: pair.longestFragment,
+                                            filepath: pair.leftFileSha === file.sha ? pair.rightFilepath : pair.leftFilepath,
+                                            lineCount: pair.files.find(f => f.sha !== file.sha).lineCount,
+                                            sha: pair.leftFileSha === file.sha ? pair.rightFileSha : pair.leftFileSha,
+                                            repositoryId: pair.files.find(f => f.sha !== file.sha).repository.id,
+                                            repositoryName: pair.files.find(f => f.sha !== file.sha).repository.name,
+                                            repositoryOwner: pair.files.find(f => f.sha !== file.sha).repository.owner,
+                                        };
+                                    })
+                                }
+                            );
+                            
+                            layerMap[type].averageMatch = layerMap[type].files.reduce((acc, file) => acc + file.layerMatch, 0) / layerMap[type].files.length;
+                            layerMap[type].standardDeviation = this.std(layerMap[type].files.map(file => file.layerMatch));
+                            layerMap[type].numberOfFiles = layerMap[type].files.length;
+                            layerMap[type].layerLines = layerMap[type].files.reduce((acc, file) => acc + file.lineCount, 0);
+                        });
+                        const layers = Object.values(layerMap);
+                        const repositoryLines = files.reduce((acc, file) => acc + file.lineCount, 0);
+                        const numberOfFiles = files.length;
+        
+                        return [id, { id, name, owner, sha, repositoryLines, numberOfFiles, layers }];
+                    })
+            ).values()
+        );
+
+        const result: GraphGroupDTO = {
             id: group.id,
             sha: group.sha,
             date: group.groupDate,
