@@ -979,18 +979,44 @@ export class GroupsService {
         const variance = this.sum(arr.map(v => (v - mean) ** 2));
         return Math.sqrt(variance);
     }
-    
+
     async getGroupsByUser(username: string): Promise<Group[]> {
         const groups = await this.prisma.group.findMany({
             where: {
                 user: {
                     username: username
                 }
+            },
+            include: {
+                comparisons: {
+                    select: {
+                        repositories: {
+                            select: {
+                                name: true,
+                                owner: true,
+                            }
+                        }
+                    }
+                }
             }
         });
 
         if (!groups) throw new Error("Groups not found");
 
-        return groups;
+        const result = groups.map(group => {
+            const uniqueRepositories = new Map<string, any>();
+            group.comparisons.forEach(comparison => {
+                comparison.repositories.forEach(repo => {
+                    uniqueRepositories.set(repo.name, { owner: repo.owner, name: repo.name });
+                });
+            });
+
+            return {
+                ...group,
+                repositories: Array.from(uniqueRepositories.values())
+            };
+        }).map(({ comparisons, ...rest }) => rest); // Remove comparisons field
+
+        return result;
     }
 }
