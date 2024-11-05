@@ -141,4 +141,11 @@ export class GroupsController {
         if (!groupGraph) throw new NotFoundException("Group graph data not found");
         return groupGraph;
     }
+
+    @Get("/user/:username")
+    async getGroupsByUsername(@Param("username") username: string) {
+        const groups = await this.groupsService.getGroupsByUser(username);
+        if (!groups) throw new NotFoundException("Groups not found");
+        return groups;
+    }
 }

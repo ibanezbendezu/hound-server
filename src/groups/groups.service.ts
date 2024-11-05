@@ -159,9 +159,10 @@ export class GroupsService {
     }
 
     async getGroupReportBySha(sha: string): Promise<GroupReportDTO> {
-        const groupFind = this.groupPrismaQueryBySha(sha);
+        const groupFind = await this.groupPrismaQueryBySha(sha);
         if (!groupFind) throw new Error("Group not found");
-        const group = await groupFind;
+        const group = groupFind;
+        if (!group.comparisons) throw new Error("Group comparisons not found");
 
         const repositories: ReportRepositoryDTO[] = Array.from(
             new Map(
@@ -955,7 +956,12 @@ export class GroupsService {
             data: {
                 sha: groupSha,
                 groupDate: new Date(),
-                numberOfRepos: repos.length
+                numberOfRepos: repos.length,
+                user: {
+                    connect: {
+                        username: username
+                    }
+                }
             }
         });
 
@@ -972,5 +978,19 @@ export class GroupsService {
         const mean = this.sum(arr) / arr.length;
         const variance = this.sum(arr.map(v => (v - mean) ** 2));
         return Math.sqrt(variance);
+    }
+    
+    async getGroupsByUser(username: string): Promise<Group[]> {
+        const groups = await this.prisma.group.findMany({
+            where: {
+                user: {
+                    username: username
+                }
+            }
+        });
+
+        if (!groups) throw new Error("Groups not found");
+
+        return groups;
     }
 }

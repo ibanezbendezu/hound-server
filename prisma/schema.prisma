@@ -10,28 +10,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id Int @id @default(autoincrement())
-  githubId Int @unique
-  username String @unique
-  name String?
-  email String?
+  id          Int     @id @default(autoincrement())
+  githubId    Int     @unique
+  username    String  @unique
+  name        String?
+  email       String?
   githubToken String?
+
+  groups Group[]
 }
 
 model Group {
-  id Int @id @default(autoincrement())
-  sha String @unique
-  groupDate DateTime @default(now())
-  comparisons Comparison[]
+  id            Int          @id @default(autoincrement())
+  sha           String       @unique
+  groupDate     DateTime     @default(now())
+  comparisons   Comparison[]
   numberOfRepos Int
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id])
 }
 
 model Comparison {
-  id Int @id @default(autoincrement())
-  sha String @unique
-  similarity Float
+  id             Int      @id @default(autoincrement())
+  sha            String   @unique
+  similarity     Float
   comparisonDate DateTime @default(now())
 
   groups Group[]
@@ -42,69 +46,69 @@ model Comparison {
 }
 
 model Repository {
-  id Int @id @default(autoincrement())
-  sha String @unique
-  owner String
-  name String
-  totalLines  Int
+  id         Int    @id @default(autoincrement())
+  sha        String @unique
+  owner      String
+  name       String
+  totalLines Int
 
   comparisons Comparison[]
 
-  files       File[]
+  files File[]
 }
 
 model File {
-  id Int @id @default(autoincrement())
-  sha String @unique
-  filepath String
+  id        Int     @id @default(autoincrement())
+  sha       String  @unique
+  filepath  String
   charCount Int
   lineCount Int
-  type String?
-  language String?
-  
-  repository Repository @relation(fields: [repositoryId], references: [id])
+  type      String?
+  language  String?
+
+  repository   Repository @relation(fields: [repositoryId], references: [id])
   repositoryId Int
 
   pairs Pair[]
 }
 
 model Pair {
-  id              Int      @id @default(autoincrement())
+  id              Int   @id @default(autoincrement())
   similarity      Float
   totalOverlap    Int?
   longestFragment Int?
 
-  leftFilepath     String
-  leftFileSha      String
-  charCountLeft    Int
-  lineCountLeft    Int
+  leftFilepath  String
+  leftFileSha   String
+  charCountLeft Int
+  lineCountLeft Int
 
-  rightFilepath    String
-  rightFileSha     String
-  charCountRight   Int
-  lineCountRight   Int
-  
-  files           File[]
+  rightFilepath  String
+  rightFileSha   String
+  charCountRight Int
+  lineCountRight Int
 
-  fragments       Fragment[]
+  files File[]
 
-  comparison      Comparison @relation(fields: [comparisonId], references: [id])
-  comparisonId    Int
+  fragments Fragment[]
+
+  comparison   Comparison @relation(fields: [comparisonId], references: [id])
+  comparisonId Int
 }
 
 model Fragment {
-  id        Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  leftstartRow       Int
-  leftendRow         Int
-  leftstartCol       Int
-  leftendCol         Int
+  leftstartRow Int
+  leftendRow   Int
+  leftstartCol Int
+  leftendCol   Int
 
-  rightstartRow      Int
-  rightendRow        Int
-  rightstartCol      Int
-  rightendCol        Int
+  rightstartRow Int
+  rightendRow   Int
+  rightstartCol Int
+  rightendCol   Int
 
-  pairId     Int
-  pair       Pair    @relation(fields: [pairId], references: [id])
+  pairId Int
+  pair   Pair @relation(fields: [pairId], references: [id])
 }
