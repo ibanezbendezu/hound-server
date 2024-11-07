@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, NotFoundException, Put } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, NotFoundException, Put, Delete } from "@nestjs/common";
 import { GroupsService } from "./groups.service";
 import { RepositoryDTO } from "./dto/repository.dto";
 
@@ -147,5 +147,12 @@ export class GroupsController {
         const groups = await this.groupsService.getGroupsByUser(username);
         if (!groups) throw new NotFoundException("Groups not found");
         return groups;
+    }
+
+    @Delete("/:sha")
+    async deleteGroupBySha(@Param("sha") sha: string) {
+        const groupDeleted = await this.groupsService.deleteGroupBySha(sha);
+        if (!groupDeleted) throw new NotFoundException("Group not deleted");
+        return groupDeleted;
     }
 }

@@ -1019,4 +1019,16 @@ export class GroupsService {
 
         return result;
     }
+
+    async deleteGroupBySha(sha: string): Promise<Group> {
+        const group = await this.prisma.group.delete({
+            where: {
+                sha: sha
+            }
+        });
+
+        console.log("Group deleted: ", group);
+
+        return group;
+    }
 }
