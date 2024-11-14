@@ -24,7 +24,7 @@ export class ComparisonsService {
     identifyFileType(fileContent: string): string {
         const controllerPattern = /@Controller|\@GetMapping|\@PostMapping|\@DeleteMapping|\@PutMapping/;
         const servicePattern = /@Service|\@Injectable/;
-        const repositoryPattern = /@Repository|findById\(|save\(/;
+        const repositoryPattern = /@Repository|JpaRepository/;
         const entityPattern = /@Entity/;
 
         if (controllerPattern.test(fileContent)) {
@@ -44,8 +44,7 @@ export class ComparisonsService {
         const lastDotIndex = filename.lastIndexOf('.');
         if (lastDotIndex === -1) return 'Unknown';
         const extension = filename.substring(lastDotIndex + 1);
-        const languageName = ComparisonsService.languagePicker[extension] || 'Unknown';
-        return languageName;
+        return ComparisonsService.languagePicker[extension] || "Unknown";
     }
 
     async getAllComparisons(): Promise<Comparison[]> {

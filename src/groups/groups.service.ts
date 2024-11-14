@@ -4,13 +4,18 @@ import { Group } from "@prisma/client";
 import { ComparisonsService } from "src/comparisons/comparisons.service";
 import { GithubService } from "src/github/github.service";
 import { compoundHash } from "src/shared";
-
-import { GroupDTO } from "./dto/all-groups.dto";
-import { CreateGroupDTO } from "./dto/create-group.dto";
-import { ClassPairDTO, ClassReportDTO, GroupReportDTO, ReportRepositoryDTO } from "./dto/group.report.dto";
+import {
+    ClassReportDTO,
+    GroupReportDTO,
+    ReportRepositoryDTO,
+} from "./dto/group.report.dto";
 import { GroupSummaryDTO } from "./dto/group-summary.dto";
 import { GroupOverallDTO } from "./dto/group-overall.dto";
-import { GraphGroupDTO, GraphLayerDTO, GraphRepositoryDTO } from "./dto/group.graph.dto";
+import {
+    GraphGroupDTO,
+    GraphLayerDTO,
+    GraphRepositoryDTO,
+} from "./dto/group.graph.dto";
 
 const { PromisePool } = require('@supercharge/promise-pool');
 
@@ -237,7 +242,7 @@ export class GroupsService {
             ).values()
         );
 
-        const result: GroupReportDTO = {
+        return {
             id: group.id,
             sha: group.sha,
             date: group.groupDate,
@@ -246,8 +251,6 @@ export class GroupsService {
             groupLines: repositories.reduce((acc, repo) => acc + repo.repositoryLines, 0),
             repositories: repositories,
         };
-
-        return result;
     }
 
     async getGroupGraphBySha(sha: string): Promise<GraphGroupDTO> {
