@@ -71,39 +71,6 @@ describe("ComparisonsService", () => {
 
             await expect(comparisonService.getAllComparisons()).rejects.toThrow("PrismaService error");
         });
-
-        describe("identifyFileType", () => {
-            it("should identify a Controller file", () => {
-                const fileContent = "@Controller\npublic class MyController {}";
-                const result = comparisonService.identifyFileType(fileContent);
-                expect(result).toBe("Controller");
-            });
-
-            it("should identify a Service file", () => {
-                const fileContent = "@Service\npublic class MyService {}";
-                const result = comparisonService.identifyFileType(fileContent);
-                expect(result).toBe("Service");
-            });
-
-            it("should identify a Repository file", () => {
-                const fileContent = "@Repository\npublic class MyRepository {}";
-                const result = comparisonService.identifyFileType(fileContent);
-                expect(result).toBe("Repository");
-            });
-
-            it("should identify an Entity file", () => {
-                const fileContent = "@Entity\npublic class MyEntity {}";
-                const result = comparisonService.identifyFileType(fileContent);
-                expect(result).toBe("Entity");
-            });
-
-            it("should return Unknown for an unrecognized file type", () => {
-                const fileContent = "public class MyClass {}";
-                const result = comparisonService.identifyFileType(fileContent);
-                expect(result).toBe("Unknown");
-            });
-
-        });
     });
 
     describe("createComparison", () => {

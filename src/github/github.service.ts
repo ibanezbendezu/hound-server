@@ -328,9 +328,9 @@ export class GithubService {
      * @returns Tipo de archivo.
      */
     identifyFileType(fileContent: string): string {
-        const controllerPattern = /@Controller|\@GetMapping|\@PostMapping|\@DeleteMapping|\@PutMapping/;
+        const controllerPattern = /@Controller|\@GetMapping|\@PostMapping|\@DeleteMapping|\@PutMapping|\@RestController/;
         const servicePattern = /@Service|\@Injectable/;
-        const repositoryPattern = /@Repository|findById\(|save\(/;
+        const repositoryPattern = /@Repository|JpaRepository|findById\(|save\(/;
         const entityPattern = /@Entity/;
 
         if (controllerPattern.test(fileContent)) {

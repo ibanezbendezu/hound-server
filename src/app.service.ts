@@ -4,11 +4,7 @@ import { GroupsService } from "./groups/groups.service";
 
 @Injectable()
 export class AppService {
-
-    constructor(
-        private group: GroupsService
-    ) {
-    }
+    constructor(private group: GroupsService) {}
 
     getHello(): string {
         return "Hello World!";
@@ -130,9 +126,7 @@ export class AppService {
             { owner: "acientgear", name: "tingeso" },
             { owner: "CatalinaOlivares", name: "Tingeso1" },
         ];
-        
-        const results = await this.group.createGroup(repos, username);
 
-        return results;
+        return await this.group.createGroup(repos, username);
     }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, NotFoundException, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Req, UseGuards } from "@nestjs/common";
 import { Request } from "express";
 import { AppService } from "./app.service";
 import { JwtAuthGuard } from "./auth/jwt/jwt-auth.guard";
@@ -35,7 +35,6 @@ export class AppController {
 
     @Get("/test")
     async comparisonTest() {
-        const comparison = await this.appService.comparisonTestService();
-        return comparison;
+        return await this.appService.comparisonTestService();
     }
 }
